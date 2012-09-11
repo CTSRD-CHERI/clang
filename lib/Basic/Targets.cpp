@@ -4990,6 +4990,10 @@ public:
     case 'R': // An address that can be used in a non-macro load or store
       Info.setAllowsMemory();
       return true;
+    case 'C': // Capability register
+      Info.setAllowsRegister();
+      // FIXME: False if not CHERI
+      return true;
     }
   }
 
