@@ -4256,6 +4256,7 @@ Value *CodeGenFunction::EmitMIPSBuiltinExpr(unsigned BuiltinID,
                                     EmitScalarExpr(E->getArg(1)));
     }
   }
+  return 0;
 }
 
 Value *CodeGenFunction::EmitPPCBuiltinExpr(unsigned BuiltinID,
