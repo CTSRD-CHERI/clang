@@ -1316,7 +1316,6 @@ llvm::Value* ScalarExprEmitter::emitPointerCast(CGBuilderTy &Builder,
         result = Builder.CreateBitCast(result, toTy);
     }
   }
-  result->dump();
   return result;
 }
 
