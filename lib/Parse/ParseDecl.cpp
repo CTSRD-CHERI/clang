@@ -3052,7 +3052,7 @@ void Parser::ParseDeclarationSpecifiers(DeclSpec &DS,
       break;
     case tok::kw___output:
       isInvalid = DS.SetTypeQual(DeclSpec::TQ_output, Loc, PrevSpec, DiagID,
-                                 getLangOpts(), /*IsTypeSpec*/true);
+                                 getLangOpts());
       break;
 
     // C++ typename-specifier:
@@ -4351,7 +4351,7 @@ void Parser::ParseTypeQualifierListOpt(DeclSpec &DS,
       break;
     case tok::kw___output:
       isInvalid = DS.SetTypeQual(DeclSpec::TQ_output   , Loc, PrevSpec, DiagID,
-                                 getLangOpts(), /*IsTypeSpec*/false);
+                                 getLangOpts());
       break;
 
     // OpenCL qualifiers:
