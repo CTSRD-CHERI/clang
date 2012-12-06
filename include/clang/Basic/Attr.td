@@ -681,6 +681,11 @@ def Sentinel : InheritableAttr {
               DefaultIntArgument<"NullPos", 0>];
 }
 
+def Sensitive : InheritableAttr {
+  let Spellings = [GNU<"sensitive">];
+}
+
+
 def StdCall : InheritableAttr {
   let Spellings = [GNU<"stdcall">, CXX11<"gnu", "stdcall">,
                    Keyword<"__stdcall">, Keyword<"_stdcall">];

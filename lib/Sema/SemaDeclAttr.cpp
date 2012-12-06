@@ -3623,6 +3623,21 @@ static void handleNoDebugAttr(Sema &S, Decl *D, const AttributeList &Attr) {
                          Attr.getAttributeSpellingListIndex()));
 }
 
+static void handleSensitiveAttr(Sema &S, Decl *D, const AttributeList &Attr) {
+  // check the attribute arguments.
+  if (!checkAttributeNumArgs(S, Attr, 0))
+    return;
+
+
+  if (!isa<FunctionDecl>(D)) {
+    S.Diag(Attr.getLoc(), diag::warn_attribute_wrong_decl_type)
+      << Attr.getName() << ExpectedFunction;
+    return;
+  }
+
+  D->addAttr(::new (S.Context) SensitiveAttr(Attr.getRange(), S.Context));
+}
+
 static void handleNoInlineAttr(Sema &S, Decl *D, const AttributeList &Attr) {
   if (!isa<FunctionDecl>(D)) {
     S.Diag(Attr.getLoc(), diag::warn_attribute_wrong_decl_type)
@@ -4754,6 +4769,7 @@ static void ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D,
   case AttributeList::AT_NoDebug:     handleNoDebugAttr     (S, D, Attr); break;
   case AttributeList::AT_NoInline:    handleNoInlineAttr    (S, D, Attr); break;
   case AttributeList::AT_Regparm:     handleRegparmAttr     (S, D, Attr); break;
+  case AttributeList::AT_Sensitive:   handleSensitiveAttr   (S, D, Attr); break;
   case AttributeList::IgnoredAttribute:
     // Just ignore
     break;
