@@ -857,6 +857,34 @@ void ASTContext::PrintStats() const {
   BumpAlloc.PrintStats();
 }
 
+TypedefDecl *ASTContext::getIntCapDecl() const {
+  if (!IntCapDecl) {
+    TypeSourceInfo *TInfo = getTrivialTypeSourceInfo(IntCapTy);
+    IntCapDecl = TypedefDecl::Create(const_cast<ASTContext &>(*this), 
+                                     getTranslationUnitDecl(),
+                                     SourceLocation(),
+                                     SourceLocation(),
+                                     &Idents.get("__intcap_t"),
+                                     TInfo);
+  }
+  
+  return IntCapDecl;
+}
+
+TypedefDecl *ASTContext::getUIntCapDecl() const {
+  if (!UIntCapDecl) {
+    TypeSourceInfo *TInfo = getTrivialTypeSourceInfo(UnsignedIntCapTy);
+    UIntCapDecl = TypedefDecl::Create(const_cast<ASTContext &>(*this), 
+                                     getTranslationUnitDecl(),
+                                     SourceLocation(),
+                                     SourceLocation(),
+                                     &Idents.get("__uintcap_t"),
+                                     TInfo);
+  }
+  
+  return UIntCapDecl;
+}
+
 TypedefDecl *ASTContext::getInt128Decl() const {
   if (!Int128Decl) {
     TypeSourceInfo *TInfo = getTrivialTypeSourceInfo(Int128Ty);
@@ -945,6 +973,8 @@ void ASTContext::InitBuiltinTypes(const TargetInfo &Target) {
   InitBuiltinType(DoubleTy,            BuiltinType::Double);
   InitBuiltinType(LongDoubleTy,        BuiltinType::LongDouble);
 
+  InitBuiltinType(IntCapTy,            BuiltinType::IntCap);
+  InitBuiltinType(UnsignedIntCapTy,    BuiltinType::UIntCap);
   // GNU extension, 128-bit integers.
   InitBuiltinType(Int128Ty,            BuiltinType::Int128);
   InitBuiltinType(UnsignedInt128Ty,    BuiltinType::UInt128);
@@ -1539,6 +1569,11 @@ ASTContext::getTypeInfoImpl(const Type *T) const {
     case BuiltinType::LongLong:
       Width = Target->getLongLongWidth();
       Align = Target->getLongLongAlign();
+      break;
+    case BuiltinType::IntCap:
+    case BuiltinType::UIntCap:
+      Width = 256;
+      Align = 256;
       break;
     case BuiltinType::Int128:
     case BuiltinType::UInt128:
@@ -4321,6 +4356,10 @@ unsigned ASTContext::getIntegerRank(const Type *T) const {
   case BuiltinType::LongLong:
   case BuiltinType::ULongLong:
     return 6 + (getIntWidth(LongLongTy) << 3);
+  // Does this make sense?
+  case BuiltinType::IntCap:
+  case BuiltinType::UIntCap:
+    return 6 + (getIntWidth(IntCapTy) << 3);
   case BuiltinType::Int128:
   case BuiltinType::UInt128:
     return 7 + (getIntWidth(Int128Ty) << 3);
@@ -5065,6 +5104,7 @@ static char getObjCEncodingForPrimitiveKind(const ASTContext *C,
     case BuiltinType::ULong:
         return C->getTargetInfo().getLongWidth() == 32 ? 'L' : 'Q';
     case BuiltinType::UInt128:    return 'T';
+    case BuiltinType::UIntCap:    return 'Y';
     case BuiltinType::ULongLong:  return 'Q';
     case BuiltinType::Char_S:
     case BuiltinType::SChar:      return 'c';
@@ -5076,6 +5116,7 @@ static char getObjCEncodingForPrimitiveKind(const ASTContext *C,
       return C->getTargetInfo().getLongWidth() == 32 ? 'l' : 'q';
     case BuiltinType::LongLong:   return 'q';
     case BuiltinType::Int128:     return 't';
+    case BuiltinType::IntCap:     return 'y';
     case BuiltinType::Float:      return 'f';
     case BuiltinType::Double:     return 'd';
     case BuiltinType::LongDouble: return 'D';
