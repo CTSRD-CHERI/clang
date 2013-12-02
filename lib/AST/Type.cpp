@@ -1582,6 +1582,7 @@ QualType QualType::getNonLValueExprType(const ASTContext &Context) const {
 StringRef FunctionType::getNameForCallConv(CallingConv CC) {
   switch (CC) {
   case CC_C: return "cdecl";
+  case CC_CheriCCall: return "cheri_ccall";
   case CC_X86StdCall: return "stdcall";
   case CC_X86FastCall: return "fastcall";
   case CC_X86ThisCall: return "thiscall";
@@ -1893,6 +1894,7 @@ bool AttributedType::isCallingConv() const {
   case attr_pcs:
   case attr_pcs_vfp:
   case attr_cdecl:
+  case attr_cheri_ccall:
   case attr_fastcall:
   case attr_stdcall:
   case attr_thiscall:

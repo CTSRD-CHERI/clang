@@ -632,6 +632,10 @@ def PnaclCall : InheritableAttr {
   let Spellings = [GNU<"pnaclcall">];
 }
 
+def CheriCCall : InheritableAttr {
+  let Spellings = [GNU<"cheri_ccall">];
+}
+
 def IntelOclBicc : InheritableAttr {
   let Spellings = [GNU<"intel_ocl_bicc">];
 }

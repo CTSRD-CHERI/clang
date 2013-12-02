@@ -3395,6 +3395,7 @@ public:
     // No operand.
     attr_noreturn,
     attr_cdecl,
+    attr_cheri_ccall,
     attr_fastcall,
     attr_stdcall,
     attr_thiscall,
