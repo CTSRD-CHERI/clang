@@ -5191,7 +5191,7 @@ public:
 class Mips64TargetInfoBase : public MipsTargetInfoBase {
 public:
   Mips64TargetInfoBase(const llvm::Triple &Triple)
-      : MipsTargetInfoBase(Triple, "n64", "mips64") {
+      : MipsTargetInfoBase(Triple, "n64", Triple.getArchName()) {
     LongWidth = LongAlign = 64;
     PointerWidth = PointerAlign = 64;
     LongDoubleWidth = LongDoubleAlign = 128;
@@ -5656,6 +5656,7 @@ static TargetInfo *AllocateTarget(const llvm::Triple &Triple) {
     }
 
   case llvm::Triple::mips64:
+  case llvm::Triple::mips4:
     switch (os) {
     case llvm::Triple::Linux:
       return new LinuxTargetInfo<Mips64EBTargetInfo>(Triple);

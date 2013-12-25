@@ -936,6 +936,9 @@ static void getMipsCPUAndABI(const ArgList &Args,
     case llvm::Triple::mipsel:
       CPUName = DefMips32CPU;
       break;
+    case llvm::Triple::mips4:
+      CPUName = "mips4";
+      break;
     case llvm::Triple::mips64:
     case llvm::Triple::mips64el:
       CPUName = DefMips64CPU;
@@ -958,7 +961,7 @@ static void getMipsCPUAndABI(const ArgList &Args,
     // Deduce ABI name from CPU name.
     ABIName = llvm::StringSwitch<const char *>(CPUName)
       .Cases("mips32", "mips32r2", "o32")
-      .Cases("mips64", "mips64r2", "n64")
+      .Cases("mips4", "mips64", "mips64r2", "n64")
       .Default("");
   }
 
@@ -1339,6 +1342,7 @@ static std::string getCPUName(const ArgList &Args, const llvm::Triple &T) {
   case llvm::Triple::mips:
   case llvm::Triple::mipsel:
   case llvm::Triple::mips64:
+  case llvm::Triple::mips4:
   case llvm::Triple::mips64el: {
     StringRef CPUName;
     StringRef ABIName;
@@ -1490,6 +1494,7 @@ static void getTargetFeatures(const Driver &D, const llvm::Triple &Triple,
   case llvm::Triple::mips:
   case llvm::Triple::mipsel:
   case llvm::Triple::mips64:
+  case llvm::Triple::mips4:
   case llvm::Triple::mips64el:
     getMIPSTargetFeatures(D, Args, Features);
     break;
@@ -1867,6 +1872,7 @@ static bool shouldUseFramePointerForTarget(const ArgList &Args,
                                            const llvm::Triple &Triple) {
   switch (Triple.getArch()) {
   // Don't use a frame pointer on linux if optimizing for certain targets.
+  case llvm::Triple::mips4:
   case llvm::Triple::mips64:
   case llvm::Triple::mips64el:
   case llvm::Triple::mips:
@@ -2511,6 +2517,7 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
 
   case llvm::Triple::mips:
   case llvm::Triple::mipsel:
+  case llvm::Triple::mips4:
   case llvm::Triple::mips64:
   case llvm::Triple::mips64el:
   case llvm::Triple::cheri:
@@ -5629,6 +5636,7 @@ void freebsd::Assemble::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back("-a32");
   else if (getToolChain().getArch() == llvm::Triple::mips ||
            getToolChain().getArch() == llvm::Triple::mipsel ||
+           getToolChain().getArch() == llvm::Triple::mips4 ||
            getToolChain().getArch() == llvm::Triple::mips64 ||
            getToolChain().getArch() == llvm::Triple::mips64el) {
     StringRef CPUName;
@@ -5643,6 +5651,7 @@ void freebsd::Assemble::ConstructJob(Compilation &C, const JobAction &JA,
 
     if (getToolChain().getArch() == llvm::Triple::mips ||
         getToolChain().getArch() == llvm::Triple::cheri ||
+        getToolChain().getArch() == llvm::Triple::mips4 ||
         getToolChain().getArch() == llvm::Triple::mips64)
       CmdArgs.push_back("-EB");
     else
@@ -6081,6 +6090,7 @@ void gnutools::Assemble::ConstructJob(Compilation &C, const JobAction &JA,
     Args.AddLastArg(CmdArgs, options::OPT_mfpu_EQ);
   } else if (getToolChain().getArch() == llvm::Triple::mips ||
              getToolChain().getArch() == llvm::Triple::mipsel ||
+             getToolChain().getArch() == llvm::Triple::mips4 ||
              getToolChain().getArch() == llvm::Triple::mips64 ||
              getToolChain().getArch() == llvm::Triple::mips64el) {
     StringRef CPUName;
@@ -6094,6 +6104,7 @@ void gnutools::Assemble::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back(getGnuCompatibleMipsABIName(ABIName).data());
 
     if (getToolChain().getArch() == llvm::Triple::mips ||
+        getToolChain().getArch() == llvm::Triple::mips4 ||
         getToolChain().getArch() == llvm::Triple::mips64)
       CmdArgs.push_back("-EB");
     else
@@ -6209,6 +6220,7 @@ static StringRef getLinuxDynamicLinker(const ArgList &Args,
              ToolChain.getArch() == llvm::Triple::mipsel)
     return "/lib/ld.so.1";
   else if (ToolChain.getArch() == llvm::Triple::mips64 ||
+           ToolChain.getArch() == llvm::Triple::mips4 ||
            ToolChain.getArch() == llvm::Triple::mips64el) {
     if (hasMipsN32ABIArg(Args))
       return "/lib32/ld.so.1";
@@ -6286,7 +6298,8 @@ void gnutools::Link::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back("elf32btsmip");
   else if (ToolChain.getArch() == llvm::Triple::mipsel)
     CmdArgs.push_back("elf32ltsmip");
-  else if (ToolChain.getArch() == llvm::Triple::mips64) {
+  else if (ToolChain.getArch() == llvm::Triple::mips64 ||
+           ToolChain.getArch() == llvm::Triple::mips64) {
     if (hasMipsN32ABIArg(Args))
       CmdArgs.push_back("elf32btsmipn32");
     else
