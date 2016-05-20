@@ -1595,7 +1595,15 @@ QualType CXXMethodDecl::getThisType(ASTContext &C) const {
   QualType ClassTy = C.getTypeDeclType(getParent());
   ClassTy = C.getQualifiedType(ClassTy,
                                Qualifiers::fromCVRMask(getTypeQualifiers()));
-  return C.getPointerType(ClassTy);
+  unsigned defAS = C.getDefaultAS();
+  if (ClassTy.getAddressSpace() != defAS)
+    ClassTy = C.getAddrSpaceQualType(ClassTy, defAS);
+
+  QualType ThisTy = C.getPointerType(ClassTy);
+  if (ThisTy.getAddressSpace() != defAS) 
+    ThisTy = C.getAddrSpaceQualType(ThisTy, defAS);
+
+  return ThisTy;
 }
 
 bool CXXMethodDecl::hasInlineBody() const {

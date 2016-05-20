@@ -2494,7 +2494,11 @@ QualType
 ASTContext::getLValueReferenceType(QualType T, bool SpelledAsLValue) const {
   assert(getCanonicalType(T) != OverloadTy && 
          "Unresolved overloaded function type");
-  
+
+  if (T.getAddressSpace() == 0) {
+    T = getAddrSpaceQualType(T, getDefaultAS());
+  }
+ 
   // Unique pointers, to guarantee there is only one pointer of a particular
   // structure.
   llvm::FoldingSetNodeID ID;

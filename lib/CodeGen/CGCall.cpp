@@ -67,7 +67,13 @@ static unsigned ClangCallConvToLLVMCallConv(CallingConv CC) {
 /// FIXME: address space qualification?
 static CanQualType GetThisType(ASTContext &Context, const CXXRecordDecl *RD) {
   QualType RecTy = Context.getTagDeclType(RD)->getCanonicalTypeInternal();
-  return Context.getPointerType(CanQualType::CreateUnsafe(RecTy));
+  CanQualType PTy = Context.getPointerType(CanQualType::CreateUnsafe(RecTy));
+  unsigned defAS = Context.getDefaultAS();
+  if (PTy.getQualifiers().getAddressSpace() != defAS) {
+    RecTy = Context.getAddrSpaceQualType(RecTy, defAS);
+    PTy = Context.getPointerType(CanQualType::CreateUnsafe(RecTy));
+  }
+  return PTy;
 }
 
 /// Returns the canonical formal type of the given C++ method.
