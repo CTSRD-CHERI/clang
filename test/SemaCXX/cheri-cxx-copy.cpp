@@ -2,6 +2,7 @@
 // RUN: %clang_cc1 -DCOPY_CONVERSION=1 -triple cheri-unknown-freebsd -target-abi sandbox -fsyntax-only -verify -Wno-implicit-exception-spec-mismatch %s
 // RUN: %clang_cc1 -DCOPY_RETURN_ONE_LEVEL=1 -triple cheri-unknown-freebsd -target-abi sandbox -fsyntax-only -verify %s
 // RUN: %clang_cc1 -DCOPY_RETURN_TWO_LEVEL=1 -triple cheri-unknown-freebsd -target-abi sandbox -fsyntax-only -verify %s
+// RUN: %clang_cc1 -DCOPY_RETURN_OUTSIDE_CLASS=1 -triple cheri-unknown-freebsd -target-abi sandbox -fsyntax-only -verify %s
 // expected-no-diagnostics
 
 class A { };
@@ -64,5 +65,21 @@ int main(void) {
   B b;
   A a = b.getA();
   return 0;
+}
+#endif
+
+#ifdef COPY_RETURN_OUTSIDE_CLASS
+class B {
+  public:
+    B() { }
+    B(const B&);
+};
+
+B getB() {
+  return B();
+}
+
+B getGetB() {
+  return getB();
 }
 #endif

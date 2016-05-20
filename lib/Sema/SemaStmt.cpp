@@ -3237,6 +3237,14 @@ StmtResult Sema::BuildReturnStmt(SourceLocation ReturnLoc, Expr *RetValExp) {
 
     QualType RetType = RelatedRetType.isNull() ? FnRetType : RelatedRetType;
 
+    unsigned defAS = Context.getDefaultAS();
+    if (RetType.getAddressSpace() != defAS)
+      RetType = Context.getAddrSpaceQualType(RetType, defAS);
+
+    QualType RetValExpType = RetValExp->getType();
+    if (RetValExpType.getAddressSpace() != defAS)
+      RetValExp->setType(Context.getAddrSpaceQualType(RetValExpType, defAS));
+
     // C99 6.8.6.4p3(136): The return statement is not an assignment. The
     // overlap restriction of subclause 6.5.16.1 does not apply to the case of
     // function return.
