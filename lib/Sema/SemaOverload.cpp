@@ -4793,6 +4793,13 @@ TryObjectArgumentInitialization(Sema &S, QualType FromType,
 
   assert(FromType->isRecordType());
 
+  unsigned defAS = S.Context.getDefaultAS();
+  if (FromType.getAddressSpace() != defAS)
+    FromType = S.Context.getAddrSpaceQualType(FromType, defAS);
+
+  if (ImplicitParamType.getAddressSpace() != defAS)
+    ImplicitParamType = S.Context.getAddrSpaceQualType(ImplicitParamType, defAS);
+
   // C++0x [over.match.funcs]p4:
   //   For non-static member functions, the type of the implicit object
   //   parameter is
