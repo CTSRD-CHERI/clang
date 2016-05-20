@@ -9340,6 +9340,18 @@ void Sema::AddInitializerToDecl(Decl *RealDecl, Expr *Init,
         Args[Idx] = Res.get();
       }
     }
+    // Ensure arg types have the correct address-space qualifier
+    unsigned defAS = Context.getDefaultAS();
+    for (size_t Idx = 0; Idx < Args.size(); ++Idx) {
+      QualType ArgType = Args[Idx]->getType();
+      if (ArgType.getAddressSpace() != defAS) {
+        if (const PointerType* PTy = dyn_cast<PointerType>(ArgType.getTypePtr())) {
+          ArgType = Context.getPointerType(
+                      Context.getAddrSpaceQualType(PTy->getPointeeType(), defAS));
+        }
+        Args[Idx]->setType(Context.getAddrSpaceQualType(ArgType, defAS));
+      }
+    }
     if (VDecl->isInvalidDecl())
       return;
 

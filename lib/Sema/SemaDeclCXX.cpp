@@ -11548,7 +11548,7 @@ CheckOperatorNewDeleteTypes(Sema &SemaRef, const FunctionDecl *FnDecl,
       << FnDecl->getDeclName() << ExpectedFirstParamType;
 
   // Check that the first parameter type is what we expect.
-  if (SemaRef.Context.getCanonicalType(FirstParamType).getUnqualifiedType() != 
+  if (SemaRef.Context.getCanonicalType(FirstParamType) != 
       ExpectedFirstParamType)
     return SemaRef.Diag(FnDecl->getLocation(), InvalidParamTypeDiag)
     << FnDecl->getDeclName() << ExpectedFirstParamType;
@@ -11571,8 +11571,19 @@ CheckOperatorNewDeclaration(Sema &SemaRef, const FunctionDecl *FnDecl) {
   // C++ [basic.stc.dynamic.allocation]p1:
   //  The return type shall be void*. The first parameter shall have type 
   //  std::size_t.
-  if (CheckOperatorNewDeleteTypes(SemaRef, FnDecl, SemaRef.Context.VoidPtrTy, 
-                                  SizeTy,
+  //
+  // Use address-space-qualified types for the pure capability ABI
+  unsigned defAS = SemaRef.Context.getDefaultAS();
+  QualType QResTy = SemaRef.Context.VoidPtrTy;
+  if (QResTy.getAddressSpace() != defAS)
+    QResTy = SemaRef.Context.getAddrSpaceQualType(QResTy, defAS);
+  QualType QSizeTy = SizeTy;
+  if (QSizeTy.getAddressSpace() != defAS)
+    QSizeTy = SemaRef.Context.getAddrSpaceQualType(QSizeTy, defAS);
+
+  if (CheckOperatorNewDeleteTypes(SemaRef, FnDecl, 
+                                  SemaRef.Context.getCanonicalType(QResTy),
+                                  SemaRef.Context.getCanonicalType(QSizeTy),
                                   diag::err_operator_new_dependent_param_type,
                                   diag::err_operator_new_param_type))
     return true;
@@ -11599,8 +11610,14 @@ CheckOperatorDeleteDeclaration(Sema &SemaRef, FunctionDecl *FnDecl) {
   // C++ [basic.stc.dynamic.deallocation]p2:
   //   Each deallocation function shall return void and its first parameter 
   //   shall be void*.
+  //
+  // Use address-space-qualified types for the pure capability ABI
+  unsigned defAS = SemaRef.Context.getDefaultAS();
+  QualType QParamTy = SemaRef.Context.VoidPtrTy;
+  if (QParamTy.getAddressSpace() != defAS)
+    QParamTy = SemaRef.Context.getAddrSpaceQualType(QParamTy, defAS);
   if (CheckOperatorNewDeleteTypes(SemaRef, FnDecl, SemaRef.Context.VoidTy, 
-                                  SemaRef.Context.VoidPtrTy,
+                                  SemaRef.Context.getCanonicalType(QParamTy),
                                  diag::err_operator_delete_dependent_param_type,
                                  diag::err_operator_delete_param_type))
     return true;

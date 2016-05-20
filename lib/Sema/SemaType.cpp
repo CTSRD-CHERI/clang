@@ -3629,6 +3629,9 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
       if (DeclType.Ptr.TypeQuals)
         T = S.BuildQualifiedType(T, DeclType.Loc, DeclType.Ptr.TypeQuals);
 
+      if (T.getAddressSpace() != Context.getDefaultAS())
+        T = Context.getAddrSpaceQualType(T, Context.getDefaultAS());
+
       break;
     case DeclaratorChunk::Reference: {
       // Verify that we're not building a reference to pointer to function with
