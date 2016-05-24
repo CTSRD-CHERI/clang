@@ -36,6 +36,7 @@
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/Triple.h"
+#include "llvm/IR/DataLayout.h"
 #include "llvm/Support/Capacity.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
@@ -2611,9 +2612,10 @@ QualType ASTContext::getConstantArrayType(QualType EltTy,
 
   // Convert the array size into a canonical width matching the pointer size for
   // the target.
+  llvm::DataLayout DataLayout(Target->getDataLayoutString());
   llvm::APInt ArySize(ArySizeIn);
   ArySize =
-    ArySize.zextOrTrunc(Target->getPointerWidth(getTargetAddressSpace(EltTy)));
+    ArySize.zextOrTrunc(DataLayout.getPointerBaseSizeInBits(getTargetAddressSpace(EltTy)));
 
   llvm::FoldingSetNodeID ID;
   ConstantArrayType::Profile(ID, EltTy, ArySize, ASM, IndexTypeQuals);
