@@ -2740,6 +2740,10 @@ Sema::SpecialMemberOverloadResult *Sema::LookupSpecialMember(CXXRecordDecl *RD,
       ArgType.addConst();
     if (VolatileArg)
       ArgType.addVolatile();
+    
+    unsigned defAS = Context.getDefaultAS();
+    if (ArgType.getAddressSpace() != defAS)
+      ArgType = Context.getAddrSpaceQualType(ArgType, defAS);
 
     // This isn't /really/ specified by the standard, but it's implied
     // we should be working from an RValue in the case of move to ensure
