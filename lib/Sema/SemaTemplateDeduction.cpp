@@ -3151,7 +3151,10 @@ static bool AdjustFunctionParmAndArgTypesForDeduction(Sema &S,
     else {
       // - If A is a cv-qualified type, the top level cv-qualifiers of A's
       //   type are ignored for type deduction.
-      ArgType = ArgType.getUnqualifiedType();
+      // - Keep address-space qualifier
+      ArgType = S.Context.getAddrSpaceQualType(
+                    ArgType.getUnqualifiedType(),
+                    S.Context.getDefaultAS());
     }
   }
 
