@@ -1,4 +1,5 @@
-// RUN: %clang_cc1 -triple cheri-unknown-freebsd -target-abi sandbox -fsyntax-only -verify %s
+// RUN: %clang_cc1 -DSIMPLE=1 -triple cheri-unknown-freebsd -target-abi sandbox -fsyntax-only -verify %s
+// RUN: %clang_cc1 -DTYPENAME=1 -triple cheri-unknown-freebsd -target-abi sandbox -fsyntax-only -verify %s
 // expected-no-diagnostics
 template <bool __v>
 struct bool_constant {
@@ -19,6 +20,14 @@ struct my_enable_if<true, T> {
   typedef T type;
 };
 
+#ifdef SIMPLE
+int main(void) {
+  my_enable_if<true, int>::type i;
+  return 0;
+}
+#endif
+
+#ifdef TYPENAME
 template<class T>
 void f(T, typename my_enable_if
                    <
@@ -30,3 +39,4 @@ int main(void) {
   f(&i);
   return 0;
 }
+#endif
