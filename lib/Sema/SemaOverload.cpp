@@ -4895,10 +4895,18 @@ Sema::PerformObjectArgumentInitialization(Expr *From,
   QualType ImplicitParamRecordType  =
     Method->getThisType(Context)->getAs<PointerType>()->getPointeeType();
 
+  unsigned defAS = Context.getDefaultAS();
+  if (ImplicitParamRecordType.getAddressSpace() != defAS) {
+    ImplicitParamRecordType = 
+      Context.getAddrSpaceQualType(ImplicitParamRecordType, defAS);
+  }
+
   Expr::Classification FromClassification;
   if (const PointerType *PT = From->getType()->getAs<PointerType>()) {
     FromRecordType = PT->getPointeeType();
-    DestType = Method->getThisType(Context);
+    //kg: arguments are rvalues, so DestType does not have the
+    //address_space(200) qualifier
+    DestType = Context.getPointerType(ImplicitParamRecordType);
     FromClassification = Expr::Classification::makeSimpleLValue();
   } else {
     FromRecordType = From->getType();
@@ -6897,6 +6905,10 @@ BuiltinCandidateTypeSet::AddPointerWithMoreQualifiedTypeVariants(QualType Ty,
       QPointerTy = Context.getPointerType(QPointeeTy);
     else
       QPointerTy = Context.getObjCObjectPointerType(QPointeeTy);
+
+    // Add address_space qualifier
+    if (VisibleQuals.hasAddressSpace())
+      QPointerTy = Context.getAddrSpaceQualType(QPointerTy, VisibleQuals.getAddressSpace());
     
     // Insert qualified pointer type.
     PointerTypes.insert(QPointerTy);
@@ -8187,8 +8199,13 @@ void Sema::AddBuiltinOperatorCandidates(OverloadedOperatorKind Op,
   // candidate types or either arithmetic or enumeral candidate types.
   Qualifiers VisibleTypeConversionsQuals;
   VisibleTypeConversionsQuals.addConst();
-  for (unsigned ArgIdx = 0, N = Args.size(); ArgIdx != N; ++ArgIdx)
+  for (unsigned ArgIdx = 0, N = Args.size(); ArgIdx != N; ++ArgIdx) {
     VisibleTypeConversionsQuals += CollectVRQualifiers(Context, Args[ArgIdx]);
+    // Also collect address-space qualifiers
+    Qualifiers ArgQuals = Args[ArgIdx]->getType().getQualifiers();
+    if (ArgQuals.hasAddressSpace())
+      VisibleTypeConversionsQuals.addAddressSpace(ArgQuals.getAddressSpace());
+  }
 
   bool HasNonRecordCandidateType = false;
   bool HasArithmeticOrEnumeralCandidateType = false;

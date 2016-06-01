@@ -9778,6 +9778,20 @@ TreeTransform<Derived>::TransformCXXUnresolvedConstructExpr(
                                   &ArgumentChanged))
     return ExprError();
 
+  // Ensure arg types have the correct address-space qualifier
+  ASTContext& Context = getSema().Context;
+  unsigned defAS = Context.getDefaultAS();
+  for (size_t Idx = 0; Idx < Args.size(); ++Idx) {
+    QualType ArgType = Args[Idx]->getType();
+    if (ArgType.getAddressSpace() != defAS) {
+      if (const PointerType* PTy = dyn_cast<PointerType>(ArgType.getTypePtr())) {
+        ArgType = Context.getPointerType(
+                    Context.getAddrSpaceQualType(PTy->getPointeeType(), defAS));
+      }
+      Args[Idx]->setType(Context.getAddrSpaceQualType(ArgType, defAS));
+    }
+  }
+
   if (!getDerived().AlwaysRebuild() &&
       T == E->getTypeSourceInfo() &&
       !ArgumentChanged)

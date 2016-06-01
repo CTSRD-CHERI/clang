@@ -4563,6 +4563,10 @@ static void TryUserDefinedConversion(Sema &S,
 
   // Add the user-defined conversion step that calls the conversion function.
   QualType ConvType = Function->getCallResultType();
+  unsigned defAS = S.Context.getDefaultAS();
+  if (ConvType.getAddressSpace() != defAS)
+    ConvType = S.Context.getAddrSpaceQualType(ConvType, defAS);
+
   if (ConvType->getAs<RecordType>()) {
     // If we're converting to a class type, there may be an copy of
     // the resulting temporary object (possible to create an object of
@@ -6341,7 +6345,12 @@ InitializationSequence::Perform(Sema &S,
           return ExprError();
 
         // Build an expression that constructs a temporary.
-        CurInit = S.BuildCXXConstructExpr(Loc, Step->Type, Constructor,
+        QualType ConstrType = Step->Type;
+        unsigned defAS = S.Context.getDefaultAS();
+        if (ConstrType.getAddressSpace() != defAS)
+          ConstrType = S.Context.getAddrSpaceQualType(ConstrType, defAS);
+
+        CurInit = S.BuildCXXConstructExpr(Loc, ConstrType, Constructor,
                                           ConstructorArgs,
                                           HadMultipleCandidates,
                                           /*ListInit*/ false,
