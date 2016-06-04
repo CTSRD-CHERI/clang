@@ -488,7 +488,7 @@ static TemplateArgumentLoc translateTemplateArgument(Sema &SemaRef,
   case ParsedTemplateArgument::Type: {
     TypeSourceInfo *DI;
     QualType T = SemaRef.GetTypeFromParser(Arg.getAsType(), &DI);
-    if (!T->isTemplateTypeParmType() && !T->isVoidType()) {
+    if (!T->isDependentType() && !T->isVoidType()) {
       unsigned defAS = SemaRef.Context.getDefaultAS();
       if (T.getAddressSpace() != defAS)
         T = SemaRef.Context.getAddrSpaceQualType(T, defAS);

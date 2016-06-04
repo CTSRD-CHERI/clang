@@ -1921,9 +1921,21 @@ static bool isSameTemplateArg(ASTContext &Context,
     case TemplateArgument::Null:
       llvm_unreachable("Comparing NULL template argument");
 
-    case TemplateArgument::Type:
-      return Context.getCanonicalType(X.getAsType()) ==
-             Context.getCanonicalType(Y.getAsType());
+    case TemplateArgument::Type: {
+      // X (original template argument passed to the class template) and Y
+      // (template argument instantiated as a result of deduction) may not
+      // both be qualified, depending on the structure of the template
+      // parameter. For example, template parameter T will be instantiated to
+      // __capability int after deduction, whereas parameter A<N> (e.g. used
+      // in a type trait) would be instantiated to A<1> (rather than
+      // __capability A<1>). This is because in the former, the deduced
+      // argument is __capability int, whereas in the latter 1 is deduced.
+      // TODO: Fix this?
+      QualType XType = X.getAsType().getUnqualifiedType();
+      QualType YType = Y.getAsType().getUnqualifiedType();
+      return Context.getCanonicalType(XType) == 
+             Context.getCanonicalType(YType);
+    }
 
     case TemplateArgument::Declaration:
       return isSameDeclaration(X.getAsDecl(), Y.getAsDecl());
