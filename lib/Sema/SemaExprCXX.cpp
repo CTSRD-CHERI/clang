@@ -389,7 +389,11 @@ ExprResult Sema::BuildCXXTypeId(QualType TypeInfoType,
   if (T->isVariablyModifiedType())
     return ExprError(Diag(TypeidLoc, diag::err_variably_modified_typeid) << T);
 
-  return new (Context) CXXTypeidExpr(TypeInfoType.withConst(), Operand,
+  QualType ResTy = TypeInfoType.withConst();
+  unsigned defAS = Context.getDefaultAS();
+  if (ResTy.getAddressSpace() != defAS)
+    ResTy = Context.getAddrSpaceQualType(ResTy, defAS);
+  return new (Context) CXXTypeidExpr(ResTy, Operand,
                                      SourceRange(TypeidLoc, RParenLoc));
 }
 

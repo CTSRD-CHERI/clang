@@ -1766,8 +1766,8 @@ static llvm::Value *EmitTypeidFromVTable(CodeGenFunction &CGF, const Expr *E,
 
 llvm::Value *CodeGenFunction::EmitCXXTypeidExpr(const CXXTypeidExpr *E) {
   llvm::Type *StdTypeInfoPtrTy = 
-    ConvertType(E->getType())->getPointerTo();
-  
+    ConvertType(E->getType())->getPointerTo(CGM.getContext().getDefaultAS());
+
   if (E->isTypeOperand()) {
     llvm::Constant *TypeInfo =
         CGM.GetAddrOfRTTIDescriptor(E->getTypeOperand(getContext()));
