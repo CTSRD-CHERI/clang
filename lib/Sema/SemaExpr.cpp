@@ -5129,7 +5129,16 @@ Sema::BuildResolvedCallExpr(Expr *Fn, NamedDecl *NDecl,
     return ExprError();
 
   // We know the result type of the call, set it.
-  TheCall->setType(FuncT->getCallResultType(Context));
+  QualType CallType = FuncT->getCallResultType(Context);
+  // Only adding capability qualifier to result type for C++, as not sure of
+  // the consequences for C
+  if (getLangOpts().CPlusPlus) { 
+    unsigned defAS = Context.getDefaultAS();
+    if (CallType.getAddressSpace() != defAS)
+      CallType = Context.getAddrSpaceQualType(CallType, defAS);
+  }
+
+  TheCall->setType(CallType);
   TheCall->setValueKind(Expr::getValueKindForType(FuncT->getReturnType()));
 
   const FunctionProtoType *Proto = dyn_cast<FunctionProtoType>(FuncT);

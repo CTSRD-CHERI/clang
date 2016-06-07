@@ -5667,6 +5667,10 @@ PerformConstructorInitialization(Sema &S,
   if (shouldBindAsTemporary(Entity))
     CurInit = S.MaybeBindToTemporary(CurInit.get());
 
+  QualType CType = CurInit.get()->getType();
+  unsigned defAS = S.Context.getDefaultAS();
+  if (CType.getAddressSpace() != defAS)
+    CurInit.get()->setType(S.Context.getAddrSpaceQualType(CType, defAS));
   return CurInit;
 }
 
