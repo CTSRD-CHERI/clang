@@ -1016,8 +1016,14 @@ Sema::BuildCXXTypeConstructExpr(TypeSourceInfo *TInfo,
   SourceLocation TyBeginLoc = TInfo->getTypeLoc().getBeginLoc();
 
   if (Ty->isDependentType() || CallExpr::hasAnyTypeDependentArguments(Exprs)) {
-    return CXXUnresolvedConstructExpr::Create(Context, TInfo, LParenLoc, Exprs,
+    Expr* E = CXXUnresolvedConstructExpr::Create(Context, TInfo, LParenLoc, Exprs,
                                               RParenLoc);
+    QualType EType = E->getType();
+    unsigned defAS = Context.getDefaultAS();
+    if (EType.getAddressSpace() != defAS)
+      E->setType(Context.getAddrSpaceQualType(EType, defAS));
+
+    return E;
   }
 
   bool ListInitialization = LParenLoc.isInvalid();
