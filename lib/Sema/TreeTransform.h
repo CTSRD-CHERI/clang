@@ -3532,7 +3532,7 @@ bool TreeTransform<Derived>::TransformTemplateArgument(
 
     QualType DIType = DI->getType();
     // preserve address-space if Input isn't a type param
-    if (!Input.getArgument().getAsType()->isTemplateTypeParmType()) {
+    if (!Input.getArgument().getAsType()->isDependentType()) {
       unsigned InputAS = Input.getArgument().getAsType().getAddressSpace();
       if (DIType.getAddressSpace() != InputAS) {
         DIType = SemaRef.Context.getAddrSpaceQualType(DIType, InputAS);
