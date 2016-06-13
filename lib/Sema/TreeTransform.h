@@ -3530,7 +3530,17 @@ bool TreeTransform<Derived>::TransformTemplateArgument(
     DI = getDerived().TransformType(DI);
     if (!DI) return true;
 
-    Output = TemplateArgumentLoc(TemplateArgument(DI->getType()), DI);
+    QualType DIType = DI->getType();
+    // preserve address-space if Input isn't a type param
+    if (!Input.getArgument().getAsType()->isTemplateTypeParmType()) {
+      unsigned InputAS = Input.getArgument().getAsType().getAddressSpace();
+      if (DIType.getAddressSpace() != InputAS) {
+        DIType = SemaRef.Context.getAddrSpaceQualType(DIType, InputAS);
+        DI->overrideType(DIType);
+      }
+    }
+
+    Output = TemplateArgumentLoc(TemplateArgument(DIType), DI);
     return false;
   }
 
