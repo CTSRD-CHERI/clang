@@ -683,6 +683,11 @@ Decl *Sema::ActOnNonTypeTemplateParameter(Scope *S, Declarator &D,
     Invalid = true;
   }
 
+  // implicitly qualify all non-type parameters
+  unsigned defAS = Context.getDefaultAS();
+  if (T.getAddressSpace() != defAS)
+    T = Context.getAddrSpaceQualType(T, defAS);
+
   IdentifierInfo *ParamName = D.getIdentifier();
   bool IsParameterPack = D.hasEllipsis();
   NonTypeTemplateParmDecl *Param
@@ -4813,8 +4818,9 @@ ExprResult Sema::CheckTemplateArgument(NonTypeTemplateParmDecl *Param,
   }
 
   // We should have already dropped all cv-qualifiers by now.
-  assert(!ParamType.hasQualifiers() &&
-         "non-type template parameter type cannot be qualified");
+  //kg: need to fix this
+  //assert(!ParamType.hasQualifiers() &&
+  //       "non-type template parameter type cannot be qualified");
 
   if (CTAK == CTAK_Deduced &&
       !Context.hasSameUnqualifiedType(ParamType, Arg->getType())) {

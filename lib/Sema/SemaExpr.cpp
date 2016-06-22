@@ -2879,7 +2879,8 @@ ExprResult Sema::BuildDeclarationNameExpr(
       // For non-references, we need to strip qualifiers just in case
       // the template parameter was declared as 'const int' or whatever.
       valueKind = VK_RValue;
-      type = type.getUnqualifiedType();
+      unsigned AS = type.getAddressSpace();
+      type = Context.getAddrSpaceQualType(type.getUnqualifiedType(), AS);
       break;
     }
 
