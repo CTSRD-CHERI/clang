@@ -5114,6 +5114,17 @@ Sema::ActOnTypedefDeclarator(Scope* S, Declarator& D, DeclContext* DC,
     Previous.clear();
   }
 
+  // For CHERI-C++, ensure underlying type is properly qualified
+  if (LangOpts.CPlusPlus) {
+    QualType T = TInfo->getType();
+    if (!T->isDependentType() && !T->isVoidType()) {
+      unsigned defAS = Context.getDefaultAS();
+      if (T.getAddressSpace() != defAS)
+        T = Context.getAddrSpaceQualType(T, defAS);
+      TInfo->overrideType(T);
+    }
+  }
+
   DiagnoseFunctionSpecifiers(D.getDeclSpec());
 
   if (D.getDeclSpec().isConstexprSpecified())
