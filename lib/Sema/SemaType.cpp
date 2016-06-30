@@ -1885,7 +1885,8 @@ QualType Sema::BuildPointerType(QualType T,
       case PIK_Invalid:
         llvm_unreachable("Invalid pointer interpretation!");
     }
-    T = Context.getAddrSpaceQualType(T, AS);
+    if (!T->isDependentType())
+      T = Context.getAddrSpaceQualType(T, AS);
   }
   // Build the pointer type.
   return Context.getPointerType(T);

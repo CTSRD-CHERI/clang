@@ -4548,7 +4548,7 @@ QualType ASTContext::getAdjustedParameterType(QualType T) const {
       T = getAddrSpaceQualType(T, DefaultAS);
     T = getDecayedType(T);
   }
-  if (T->isVoidType() || T.getAddressSpace())
+  if (T->isVoidType() || T.getAddressSpace() || T->isDependentType())
     return T;
   return getAddrSpaceQualType(T, DefaultAS);
 }
