@@ -3892,6 +3892,21 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
         }
       }
 
+      if (LangOpts.CPlusPlus && Context.getTargetInfo().areAllPointersCapabilities()) {
+        // Qualify return types with __capability except for:
+        //  - void and template type parameter return types
+        //  - operators and the main function
+        IdentifierInfo *Id = D.getIdentifier();
+        if (D.getName().getKind() != UnqualifiedId::IK_ConversionFunctionId
+           && !(Id && Id->isStr("main"))
+           && !(T->isTemplateTypeParmType() || T->isVoidType())) {
+          unsigned defAS = Context.getDefaultAS();
+          if (T.getAddressSpace() != defAS) {
+            T = Context.getAddrSpaceQualType(T, defAS);
+          }
+        }
+      }
+
       if (LangOpts.CPlusPlus && D.getDeclSpec().hasTagDefinition()) {
         // C++ [dcl.fct]p6:
         //   Types shall not be defined in return or parameter types.

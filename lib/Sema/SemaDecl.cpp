@@ -5115,9 +5115,10 @@ Sema::ActOnTypedefDeclarator(Scope* S, Declarator& D, DeclContext* DC,
   }
 
   // For CHERI-C++, ensure underlying type is properly qualified
+  // (only add qualifier if T isn't void or a template type parameter)
   if (LangOpts.CPlusPlus) {
     QualType T = TInfo->getType();
-    if (!T->isDependentType() && !T->isVoidType()) {
+    if (!T->isTemplateTypeParmType() && !T->isVoidType()) {
       unsigned defAS = Context.getDefaultAS();
       if (T.getAddressSpace() != defAS)
         T = Context.getAddrSpaceQualType(T, defAS);
