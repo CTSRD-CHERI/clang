@@ -292,6 +292,11 @@ public:
     qs.removeObjCLifetime();
     return qs;
   }
+  Qualifiers withoutAddressSpace() const {
+    Qualifiers qs = *this;
+    qs.removeAddressSpace();
+    return qs;
+  }
 
   bool hasObjCLifetime() const { return Mask & LifetimeMask; }
   ObjCLifetime getObjCLifetime() const {
@@ -5099,7 +5104,12 @@ inline bool QualType::isCanonical() const {
 
 inline bool QualType::isCanonicalAsParam() const {
   if (!isCanonical()) return false;
-  if (hasLocalQualifiers()) return false;
+  // Should have no local qualifiers (except __capability)
+  Qualifiers Qs = getLocalQualifiers();
+  if (Qs.getAddressSpace() == 200) { //TODO: don't hardcode 200
+    Qs = Qs.withoutAddressSpace();
+  }
+  if (Qs.hasQualifiers()) return false;
 
   const Type *T = getTypePtr();
   if (T->isVariablyModifiedType() && T->hasSizedVLAType())

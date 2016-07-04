@@ -4172,6 +4172,10 @@ CanQualType ASTContext::getCanonicalParamType(QualType T) const {
     Result = getPointerType(QualType(Ty, 0));
   } else {
     Result = QualType(Ty, 0);
+    // preserve __capability
+    if (getTargetInfo().areAllPointersCapabilities()) {
+      Result = getAddrSpaceQualType(Result, T.getAddressSpace());
+    }
   }
 
   return CanQualType::CreateUnsafe(Result);
