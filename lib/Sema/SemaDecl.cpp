@@ -1858,11 +1858,24 @@ bool Sema::isIncompatibleTypedef(TypeDecl *Old, TypedefNameDecl *New) {
     New->setInvalidDecl();
     return true;    
   }
-  
+
   if (OldType != NewType &&
       !OldType->isDependentType() &&
       !NewType->isDependentType() &&
-      !Context.hasSameType(OldType, NewType)) { 
+      !Context.hasSameType(OldType, NewType)) {
+
+    // In CHERI-C++, when New is a typedef of the form 
+    // "typedef struct X { ... } X" or
+    // "typedef enum X { ... } X" we are not concerned
+    // with the __capability qualifier only being on the 
+    // typedef'd type
+    if (getLangOpts().CPlusPlus) {
+      if (NewType.getAddressSpace() == 200 // TODO: remove hard code
+          && (OldType->isRecordType() || OldType->isEnumeralType())
+          && Context.hasSameType(OldType, NewType.getUnqualifiedType()))
+        return false;
+    }
+
     int Kind = isa<TypeAliasDecl>(Old) ? 1 : 0;
     Diag(New->getLocation(), diag::err_redefinition_different_typedef)
       << Kind << NewType << OldType;
