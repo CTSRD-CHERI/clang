@@ -1691,9 +1691,11 @@ bool Sema::CheckAllocatedType(QualType AllocType, SourceLocation Loc,
   else if (AllocType->isVariablyModifiedType())
     return Diag(Loc, diag::err_variably_modified_new_type)
              << AllocType;
-  else if (unsigned AddressSpace = AllocType.getAddressSpace())
-    return Diag(Loc, diag::err_address_space_qualified_new)
+  else if (unsigned AddressSpace = AllocType.getAddressSpace()) {
+    if (AddressSpace != 200) // skip __capability
+      return Diag(Loc, diag::err_address_space_qualified_new)
       << AllocType.getUnqualifiedType() << AddressSpace;
+  }
   else if (getLangOpts().ObjCAutoRefCount) {
     if (const ArrayType *AT = Context.getAsArrayType(AllocType)) {
       QualType BaseAllocType = Context.getBaseElementType(AT);
