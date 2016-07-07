@@ -4854,6 +4854,15 @@ Sema::ActOnCallExpr(Scope *S, Expr *Fn, SourceLocation LParenLoc,
     return ExprError();
 
   if (getLangOpts().CPlusPlus) {
+
+    // Qualify all call args with __capability
+    unsigned defAS = Context.getDefaultAS();
+    for (Expr *E : ArgExprs) {
+      QualType T = E->getType();
+      if (!T->isTemplateTypeParmType() && T.getAddressSpace() != defAS)
+        E->setType(Context.getAddrSpaceQualType(T, defAS));
+    }
+
     // If this is a pseudo-destructor expression, build the call immediately.
     if (isa<CXXPseudoDestructorExpr>(Fn)) {
       if (!ArgExprs.empty()) {

@@ -2496,7 +2496,7 @@ ASTContext::getLValueReferenceType(QualType T, bool SpelledAsLValue) const {
   assert(getCanonicalType(T) != OverloadTy && 
          "Unresolved overloaded function type");
 
-  if (T.getAddressSpace() == 0) {
+  if (!T->isTemplateTypeParmType() && T.getAddressSpace() == 0) {
     T = getAddrSpaceQualType(T, getDefaultAS());
   }
  
