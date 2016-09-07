@@ -2871,6 +2871,11 @@ Sema::IsQualificationConversion(QualType FromType, QualType ToType,
       FromQuals.removeObjCGCAttr();
       ToQuals.removeObjCGCAttr();
     }
+
+    // For CHERI, allow removal of __capability qualifer
+    if (FromType.getAddressSpace() == 0 && ToType.getAddressSpace() == Context.getDefaultAS()) {
+      ToQuals.removeAddressSpace();
+    }
     
     //   -- for every j > 0, if const is in cv 1,j then const is in cv
     //      2,j, and similarly for volatile.
