@@ -5035,6 +5035,8 @@ static AttributeList::Kind getAttrListKind(AttributedType::Kind kind) {
     return AttributeList::AT_TypeNullUnspecified;
   case AttributedType::attr_objc_kindof:
     return AttributeList::AT_ObjCKindOf;
+  case AttributedType::attr_memory_capability:
+    return AttributeList::AT_MemoryCapability;
   }
   llvm_unreachable("unexpected attribute kind!");
 }
@@ -6801,6 +6803,22 @@ static void HandleOpenCLAccessAttr(QualType &CurType, const AttributeList &Attr,
   }
 }
 
+/// HandleMemoryCapabilityAttr - Process the memory_capability attribute. It is only
+/// applicable to pointer types and specifies that this pointer should be treated as
+/// a capability.
+static void HandleMemoryCapabilityAttr(QualType& CurType, const AttributeList &Attr,
+                                 Sema &S) {
+  // CurType should be a pointer type
+  /*if (!CurType->isPointerType()) {
+    S.Diag(Attr.getLoc(), diag::err_attribute_pointers_only) << CurType;
+    Attr.setInvalid();
+    return;
+  }*/
+
+  // We currently translate this attribute to address_space(200)
+  CurType = S.Context.getAddrSpaceQualType(CurType, 200);
+}
+
 static void processTypeAttrs(TypeProcessingState &state, QualType &type,
                              TypeAttrLocation TAL, AttributeList *attrs) {
   // Scan through and apply attributes to this type where it makes sense.  Some
@@ -6973,6 +6991,11 @@ static void processTypeAttrs(TypeProcessingState &state, QualType &type,
       // Otherwise, handle the possible delays.
       else if (!handleFunctionTypeAttr(state, attr, type))
         distributeFunctionTypeAttr(state, attr, type);
+      break;
+
+    case AttributeList::AT_MemoryCapability:
+      HandleMemoryCapabilityAttr(type, attr, state.getSema());
+      attr.setUsedAsTypeAttr();
       break;
     }
   }
