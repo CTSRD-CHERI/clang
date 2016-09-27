@@ -3640,6 +3640,7 @@ public:
     attr_nullable,
     attr_null_unspecified,
     attr_objc_kindof,
+    attr_memory_capability,
   };
 
 private:

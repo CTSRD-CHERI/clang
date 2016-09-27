@@ -2985,6 +2985,7 @@ bool AttributedType::isQualifier() const {
   case AttributedType::attr_nonnull:
   case AttributedType::attr_nullable:
   case AttributedType::attr_null_unspecified:
+  case AttributedType::attr_memory_capability:
     return true;
 
   // These aren't qualifiers; they rewrite the modified type to be a
@@ -3033,6 +3034,7 @@ bool AttributedType::isMSTypeSpec() const {
 bool AttributedType::isCallingConv() const {
   switch (getAttrKind()) {
   case attr_cheri_ccallback:
+  case attr_memory_capability:
   case attr_ptr32:
   case attr_ptr64:
   case attr_sptr:
