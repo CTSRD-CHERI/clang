@@ -8278,7 +8278,7 @@ static QualType DecodeTypeFromStr(const char *&Str, const ASTContext &Context,
         Str = End;
       }
       if (c == '*') {
-        bool IsMemCap = false;
+        bool IsMemCap = Context.getTargetInfo().areAllPointersCapabilities();
         if (*Str == 'm') {
           IsMemCap = true;
           Str++;
