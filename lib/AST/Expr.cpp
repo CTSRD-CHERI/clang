@@ -1520,8 +1520,10 @@ bool CastExpr::CastConsistency() const {
   case CK_AddressSpaceConversion:
     assert(getType()->isPointerType());
     assert(getSubExpr()->getType()->isPointerType());
-    assert(getType()->getPointeeType().getAddressSpace() !=
-           getSubExpr()->getType()->getPointeeType().getAddressSpace());
+    assert((getType()->getPointeeType().getAddressSpace() !=
+           getSubExpr()->getType()->getPointeeType().getAddressSpace())
+           || (getType()->getAs<PointerType>()->isMemoryCapability() 
+              != getSubExpr()->getType()->getAs<PointerType>()->isMemoryCapability()));
   // These should not have an inheritance path.
   case CK_Dynamic:
   case CK_ToUnion:
