@@ -10051,9 +10051,7 @@ QualType Sema::CheckAddressOfOperand(ExprResult &OrigOp, SourceLocation OpLoc) {
   if (op->getType()->isObjCObjectType())
     return Context.getObjCObjectPointerType(op->getType());
   QualType Ty = op->getType();
-  if (Ty->isFunctionType())
-    return Context.getPointerType(Ty, Context.getTargetInfo().areAllPointersCapabilities());
-  return Context.getPointerType(Ty); //FIXME-cheri-qual: Should this be a memcap in the sandbox abi?
+  return Context.getPointerType(Ty, Context.getTargetInfo().areAllPointersCapabilities());
 }
 
 static void RecordModifiableNonNullParam(Sema &S, const Expr *Exp) {
