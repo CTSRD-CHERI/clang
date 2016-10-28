@@ -6004,7 +6004,8 @@ checkConditionalObjectPointersCompatibility(Sema &S, ExprResult &LHS,
     // Figure out necessary qualifiers (C99 6.5.15p6)
     QualType destPointee
       = S.Context.getQualifiedType(lhptee, rhptee.getQualifiers());
-    QualType destType = S.Context.getPointerType(destPointee);
+    QualType destType = S.Context.getPointerType(destPointee, 
+                                      RHSTy->isMemoryCapabilityType(S.Context));
     // Add qualifiers if necessary.
     LHS = S.ImpCastExprToType(LHS.get(), destType, NopCastKind);
     // Promote to void*.
@@ -6014,7 +6015,8 @@ checkConditionalObjectPointersCompatibility(Sema &S, ExprResult &LHS,
   if (rhptee->isVoidType() && lhptee->isIncompleteOrObjectType()) {
     QualType destPointee
       = S.Context.getQualifiedType(rhptee, lhptee.getQualifiers());
-    QualType destType = S.Context.getPointerType(destPointee);
+    QualType destType = S.Context.getPointerType(destPointee,
+                                      LHSTy->isMemoryCapabilityType(S.Context));
     // Add qualifiers if necessary.
     RHS = S.ImpCastExprToType(RHS.get(), destType, CK_NoOp);
     // Promote to void*.
