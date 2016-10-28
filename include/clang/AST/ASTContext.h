@@ -1213,7 +1213,8 @@ public:
   /// \brief Return the unique reference to the type for the specified
   /// typedef-name decl.
   QualType getTypedefType(const TypedefNameDecl *Decl,
-                          QualType Canon = QualType()) const;
+                          QualType Canon = QualType(),
+                          bool IsMemCap = false) const;
 
   QualType getRecordType(const RecordDecl *Decl) const;
 
