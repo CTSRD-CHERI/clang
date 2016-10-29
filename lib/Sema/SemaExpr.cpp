@@ -5946,11 +5946,13 @@ static QualType checkConditionalPointerCompatibility(Sema &S, ExprResult &LHS,
   }
 
   // The pointer types are compatible.
+  bool MergedIsMemCap = LHSTy->isMemoryCapabilityType(S.Context) ||
+                        RHSTy->isMemoryCapabilityType(S.Context);
   QualType ResultTy = CompositeTy.withCVRQualifiers(MergedCVRQual);
   if (IsBlockPointer)
     ResultTy = S.Context.getBlockPointerType(ResultTy);
   else
-    ResultTy = S.Context.getPointerType(ResultTy);
+    ResultTy = S.Context.getPointerType(ResultTy, MergedIsMemCap);
 
   LHS = S.ImpCastExprToType(LHS.get(), ResultTy, CK_BitCast);
   RHS = S.ImpCastExprToType(RHS.get(), ResultTy, CK_BitCast);
