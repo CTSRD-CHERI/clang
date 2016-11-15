@@ -125,7 +125,7 @@ static llvm::Constant *buildBlockDescriptor(CodeGenModule &CGM,
   else
     elements.addNullPointer(i8p);
 
-  unsigned AddrSpace = CGM.getContext().getDefaultAS();
+  unsigned AddrSpace = CGM.getTargetCodeGenInfo().getDefaultAS();
   if (C.getLangOpts().OpenCL)
     AddrSpace = C.getTargetAddressSpace(LangAS::opencl_constant);
 
@@ -957,7 +957,7 @@ llvm::Type *CodeGenModule::getBlockDescriptorType() {
                              UnsignedLongTy, UnsignedLongTy, nullptr);
 
   // Now form a pointer to that.
-  unsigned AddrSpace = Context.getDefaultAS();
+  unsigned AddrSpace = getTargetCodeGenInfo().getDefaultAS();
   if (getLangOpts().OpenCL)
     AddrSpace = getContext().getTargetAddressSpace(LangAS::opencl_constant);
   BlockDescriptorType = llvm::PointerType::get(BlockDescriptorType, AddrSpace);
@@ -995,7 +995,7 @@ RValue CodeGenFunction::EmitBlockCallExpr(const CallExpr *E,
   // Get a pointer to the generic block literal.
   llvm::Type *BlockLiteralTy =
     llvm::PointerType::get(CGM.getGenericBlockLiteralType(),
-            getContext().getDefaultAS());
+            CGM.getTargetCodeGenInfo().getDefaultAS());
 
   // Bitcast the callee to a block literal.
   BlockPtr = Builder.CreateBitCast(BlockPtr, BlockLiteralTy, "block.literal");
@@ -1026,7 +1026,7 @@ RValue CodeGenFunction::EmitBlockCallExpr(const CallExpr *E,
   llvm::Type *BlockFTy = CGM.getTypes().GetFunctionType(FnInfo);
 
   llvm::Type *BlockFTyPtr = llvm::PointerType::get(BlockFTy,
-          getContext().getDefaultAS());
+          CGM.getTargetCodeGenInfo().getDefaultAS());
   Func = Builder.CreateBitCast(Func, BlockFTyPtr);
 
   // Prepare the callee.
@@ -1056,7 +1056,7 @@ Address CodeGenFunction::GetAddrOfBlockDecl(const VarDecl *variable,
     addr = Address(Builder.CreateLoad(addr), byrefInfo.ByrefAlignment);
 
     auto byrefPointerType = llvm::PointerType::get(byrefInfo.Type,
-            getContext().getDefaultAS());
+            CGM.getTargetCodeGenInfo().getDefaultAS());
     addr = Builder.CreateBitCast(addr, byrefPointerType, "byref.addr");
 
     addr = emitBlockByrefAddress(addr, byrefInfo, /*follow*/ true,
@@ -1177,7 +1177,7 @@ void CodeGenFunction::setBlockContextParameter(const ImplicitParamDecl *D,
   // directly as BlockPointer.
   BlockPointer = Builder.CreateBitCast(arg,
                                        BlockInfo->StructureType->getPointerTo(
-                                           getContext().getDefaultAS()),
+                                           CGM.getTargetCodeGenInfo().getDefaultAS()),
                                        "block");
 }
 
@@ -1216,9 +1216,7 @@ CodeGenFunction::GenerateBlockFunction(GlobalDecl GD,
 
   // The first argument is the block pointer.  Just take it as a void*
   // and cast it later.
-  auto &C = getContext();
-  QualType selfTy = C.getPointerType(C.getAddrSpaceQualType(C.VoidTy,
-              C.getDefaultAS()));
+  QualType selfTy = getContext().VoidPtrTy;
   IdentifierInfo *II = &CGM.getContext().Idents.get(".block_descriptor");
 
   ImplicitParamDecl selfDecl(getContext(), const_cast<BlockDecl*>(blockDecl),
@@ -1413,7 +1411,8 @@ CodeGenFunction::GenerateCopyHelperFunction(const CGBlockInfo &blockInfo) {
   // Create a scope with an artificial location for the body of this function.
   auto AL = ApplyDebugLocation::CreateArtificial(*this);
   llvm::Type *structPtrTy =
-      blockInfo.StructureType->getPointerTo(getContext().getDefaultAS());
+      blockInfo.StructureType->getPointerTo(
+                                  CGM.getTargetCodeGenInfo().getDefaultAS());
 
   Address src = GetAddrOfLocalVar(&srcDecl);
   src = Address(Builder.CreateLoad(src), blockInfo.BlockAlign);
@@ -1589,7 +1588,8 @@ CodeGenFunction::GenerateDestroyHelperFunction(const CGBlockInfo &blockInfo) {
   auto AL = ApplyDebugLocation::CreateArtificial(*this);
 
   llvm::Type *structPtrTy =
-      blockInfo.StructureType->getPointerTo(getContext().getDefaultAS());
+      blockInfo.StructureType->getPointerTo(
+                                CGM.getTargetCodeGenInfo().getDefaultAS());
 
   Address src = GetAddrOfLocalVar(&srcDecl);
   src = Address(Builder.CreateLoad(src), blockInfo.BlockAlign);
@@ -1709,7 +1709,7 @@ public:
 
   void emitDispose(CodeGenFunction &CGF, Address field) override {
     field = CGF.Builder.CreateBitCast(field,
-            CGF.Int8PtrTy->getPointerTo(CGF.getContext().getDefaultAS()));
+            CGF.Int8PtrTy->getPointerTo(CGF.CGM.getTargetCodeGenInfo().getDefaultAS()));
     llvm::Value *value = CGF.Builder.CreateLoad(field);
 
     CGF.BuildBlockRelease(value, Flags | BLOCK_BYREF_CALLER);
@@ -1876,7 +1876,8 @@ generateByrefCopyHelper(CodeGenFunction &CGF, const BlockByrefInfo &byrefInfo,
 
   if (generator.needsCopy()) {
     llvm::Type *byrefPtrType =
-        byrefInfo.Type->getPointerTo(CGF.getContext().getDefaultAS());
+        byrefInfo.Type->getPointerTo(
+                            CGF.CGM.getTargetCodeGenInfo().getDefaultAS());
 
     // dst->x
     Address destField = CGF.GetAddrOfLocalVar(&dst);
@@ -1953,7 +1954,7 @@ generateByrefDisposeHelper(CodeGenFunction &CGF,
     Address addr = CGF.GetAddrOfLocalVar(&src);
     addr = Address(CGF.Builder.CreateLoad(addr), byrefInfo.ByrefAlignment);
     auto byrefPtrType =
-        byrefInfo.Type->getPointerTo(CGF.getContext().getDefaultAS());
+        byrefInfo.Type->getPointerTo(CGF.CGM.getTargetCodeGenInfo().getDefaultAS());
     addr = CGF.Builder.CreateBitCast(addr, byrefPtrType);
     addr = CGF.emitBlockByrefAddress(addr, byrefInfo, false, "object");
 
@@ -2132,7 +2133,7 @@ const BlockByrefInfo &CodeGenFunction::getBlockByrefInfo(const VarDecl *D) {
   
   // void *__forwarding;
   types.push_back(llvm::PointerType::get(byrefType,
-              getContext().getDefaultAS()));
+              CGM.getTargetCodeGenInfo().getDefaultAS()));
   size += getPointerSize();
   
   // int32_t __flags;
@@ -2411,9 +2412,9 @@ llvm::Constant *CodeGenModule::getNSConcreteGlobalBlock() {
     return NSConcreteGlobalBlock;
 
   NSConcreteGlobalBlock = GetOrCreateLLVMGlobal("_NSConcreteGlobalBlock",
-                                                Int8PtrTy->getPointerTo(
-                                                    getContext().getDefaultAS()),
-                                                nullptr);
+                                       Int8PtrTy->getPointerTo(
+                                         getTargetCodeGenInfo().getDefaultAS()),
+                                       nullptr);
   configureBlocksRuntimeObject(*this, NSConcreteGlobalBlock);
   return NSConcreteGlobalBlock;
 }
@@ -2423,9 +2424,9 @@ llvm::Constant *CodeGenModule::getNSConcreteStackBlock() {
     return NSConcreteStackBlock;
 
   NSConcreteStackBlock = GetOrCreateLLVMGlobal("_NSConcreteStackBlock",
-                                               Int8PtrTy->getPointerTo(
-                                                   getContext().getDefaultAS()),
-                                               nullptr);
+                                    Int8PtrTy->getPointerTo(
+                                      getTargetCodeGenInfo().getDefaultAS()),
+                                    nullptr);
   configureBlocksRuntimeObject(*this, NSConcreteStackBlock);
   return NSConcreteStackBlock;
 }
