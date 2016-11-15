@@ -938,7 +938,7 @@ RValue CodeGenFunction::EmitBuiltinExpr(const FunctionDecl *FD,
 
     Value *F = CGM.getIntrinsic(Intrinsic::eh_dwarf_cfa);
     F = Builder.CreateCall(F, llvm::ConstantInt::get(Int32Ty, Offset));
-    unsigned AS = getContext().getDefaultAS();
+    unsigned AS = CGM.getTargetCodeGenInfo().getDefaultAS();
     if (AS != 0)
       F = Builder.CreateAddrSpaceCast(F, Int8Ty->getPointerTo(AS));
     return RValue::get(F);
@@ -6544,7 +6544,7 @@ Value *CodeGenFunction::EmitMIPSBuiltinExpr(unsigned BuiltinID,
     auto ResultType = llvm::StructType::get( ClsTy, MethNoTy, nullptr);
     LValue Obj = EmitAggExprToLValue(E->getArg(1));
     auto ClsVal = Builder.CreateBitCast(Obj.getAddress(),
-        ClsTy->getPointerTo(getContext().getDefaultAS()));
+        ClsTy->getPointerTo(CGM.getTargetCodeGenInfo().getDefaultAS()));
     llvm::Value *Struct = llvm::Constant::getNullValue(ResultType);
     llvm::Value *ObjVal = Builder.CreateLoad(ClsVal);
     ObjVal = Builder.CreateBitCast(ObjVal, ClsTy);

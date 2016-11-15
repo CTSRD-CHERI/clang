@@ -383,6 +383,21 @@ bool Type::isStructureOrClassType() const {
   }
   return false;
 }
+bool Type::isMemoryCapabilityType(const ASTContext &Context) const {
+  if (const PointerType *PT = getAs<PointerType>())
+    return PT->isMemoryCapability();
+  else if (isObjCObjectPointerType() || isBlockPointerType())
+    return Context.getTargetInfo().areAllPointersCapabilities();
+  else if (const BuiltinType *BT = getAs<BuiltinType>()) {
+    auto Kind = BT->getKind();
+    if (Kind == BuiltinType::IntCap ||
+        Kind == BuiltinType::UIntCap)
+      return true;
+    if (Kind == BuiltinType::ObjCId)
+      return Context.getTargetInfo().areAllPointersCapabilities();
+  }
+  return false;
+}
 bool Type::isVoidPointerType() const {
   if (const PointerType *PT = getAs<PointerType>())
     return PT->getPointeeType()->isVoidType();
@@ -1935,28 +1950,6 @@ bool Type::isIncompleteType(NamedDecl **Def) const {
     return !Interface->hasDefinition();
   }
   }
-}
-
-bool QualType::isCapabilityType(ASTContext &Context) const {
-  const QualType CanonicalType = getCanonicalType();
-  unsigned CapAS = Context.getTargetInfo().AddressSpaceForCapabilities();
-  if (const BuiltinType *BT = dyn_cast<BuiltinType>(CanonicalType)) {
-    auto Kind = BT->getKind();
-    if (Kind == BuiltinType::IntCap ||
-        Kind == BuiltinType::UIntCap)
-      return true;
-    if (Kind == BuiltinType::ObjCId)
-      return Context.getDefaultAS() == CapAS;
-  }
-  const Type *T = CanonicalType.getTypePtr();
-  if (const PointerType *PT = dyn_cast<PointerType>(T)) {
-    unsigned AS = PT->getPointeeType().getAddressSpace();
-    return AS == CapAS;
-  } else if (isa<ObjCObjectPointerType>(T)) {
-    return Context.getDefaultAS() == CapAS;
-  } else if (T->isArrayType() && !T->isConstantArrayType())
-    return CanonicalType.getAddressSpace() == CapAS;
-  return false;
 }
 
 bool QualType::isPODType(ASTContext &Context) const {

@@ -6896,27 +6896,17 @@ struct MipsCheriTargetInfo : public Mips64EBTargetInfo {
   unsigned getIntCapWidth() const override { return Cheri128 ? 128 : 256; }
   unsigned getIntCapAlign() const override { return Cheri128 ? 128 : 256; }
 
-  uint64_t getPointerWidthV(unsigned AddrSpace) const override {
-    return (AddrSpace == 200) ? CapSize : PointerWidth;
-  }
-  uint64_t getPointerAlignV(unsigned AddrSpace) const override {
-    return (AddrSpace == 200) ? CapSize : PointerAlign;
-  }
-  uint64_t getPointerRangeV(unsigned) const override {
-    return 64;
-  }
+  virtual uint64_t getMemoryCapabilityWidth() const override { return CapSize; }
+
+  virtual uint64_t getMemoryCapabilityAlign() const override { return CapSize; }
+
+  virtual uint64_t getPointerRangeForMemoryCapability() const override { return 64; }
 
   bool SupportsCapabilities() const override { return true; }
-
-  int AddressSpaceForCapabilities() const override { return 200; }
-
-
-  int AddressSpaceForObjC() const override { return 200; }
 
   bool setABI(const std::string &Name) override {
     return Mips64EBTargetInfo::setABI(Name);
   }
-  int AddressSpaceForStack() const override { return CapabilityABI ? 200 : 0; }
 };
 
 class Mips64ELTargetInfo : public Mips64TargetInfoBase {

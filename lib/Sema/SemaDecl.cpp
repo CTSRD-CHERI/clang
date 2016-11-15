@@ -5627,9 +5627,6 @@ Sema::ActOnVariableDeclarator(Scope *S, Declarator &D, DeclContext *DC,
       !hasParsedAttr(S, D, AttributeList::AT_DLLExport))
     SC = SC_Extern;
 
-  if (R.getAddressSpace() == 0)
-    R = Context.getAddrSpaceQualType(R, Context.getDefaultAS());
-
   DeclContext *OriginalDC = DC;
   bool IsLocalExternDecl = SC == SC_Extern &&
                            adjustContextForLocalExternDecl(DC);
@@ -6428,8 +6425,7 @@ void Sema::CheckVariableDeclarationType(VarDecl *NewVD) {
   // automatic variables that point to other address spaces.
   // ISO/IEC TR 18037 S5.1.2
   if (!getLangOpts().OpenCL &&
-      NewVD->hasLocalStorage() && T.getAddressSpace() != 0 &&
-      T.getAddressSpace() != Context.getDefaultAS()) {
+      NewVD->hasLocalStorage() && T.getAddressSpace() != 0) {
     Diag(NewVD->getLocation(), diag::err_as_qualified_auto_decl);
     NewVD->setInvalidDecl();
     return;
@@ -7792,22 +7788,20 @@ Sema::ActOnFunctionDeclarator(Scope *S, Declarator &D, DeclContext *DC,
 
   if (NewFD->hasAttr<PointerInterpretationCapsAttr>()) {
     // FIXME: This will assert on failure - it should print a nice error.
-    unsigned CapAS = Context.getTargetInfo() .AddressSpaceForCapabilities();
+    //unsigned CapAS = Context.getTargetInfo() .AddressSpaceForCapabilities();
     const FunctionProtoType *FPT =
       NewFD->getType()->getAs<FunctionProtoType>();
     ArrayRef<QualType> OldParams = FPT->getParamTypes();
     llvm::SmallVector<QualType, 8> NewParams;
     for (QualType T : OldParams) {
       if (const PointerType *PT = T->getAs<PointerType>())
-        NewParams.push_back(Context.getPointerType(
-              Context.getAddrSpaceQualType(PT->getPointeeType(), CapAS)));
+        NewParams.push_back(Context.getPointerType(PT->getPointeeType(), true));
       else
         NewParams.push_back(T);
     }
     QualType RetTy = FPT->getReturnType();
     if (const PointerType *PT = RetTy->getAs<PointerType>())
-      RetTy = Context.getPointerType(Context.getAddrSpaceQualType(
-            PT->getPointeeType(), CapAS));
+      RetTy = Context.getPointerType(PT->getPointeeType(), true);
     NewFD->setType(Context.getFunctionType(RetTy, NewParams,
           FPT->getExtProtoInfo()));
   }
@@ -8668,8 +8662,6 @@ void Sema::CheckMain(FunctionDecl* FD, const DeclSpec& DS) {
           Context.hasSameType(QualType(qs.strip(PT->getPointeeType()), 0),
                               Context.CharTy)) {
         qs.removeConst();
-        if (Context.getDefaultAS() == qs.getAddressSpace())
-          qs.removeAddressSpace();
         mismatch = !qs.empty();
       }
     }
@@ -10566,8 +10558,7 @@ ParmVarDecl *Sema::CheckParameter(DeclContext *DC, SourceLocation StartLoc,
   // duration shall not be qualified by an address-space qualifier."
   // Since all parameters have automatic store duration, they can not have
   // an address space.
-  if ((T.getAddressSpace() != 0) &&
-      (T.getAddressSpace() != Context.getDefaultAS())) {
+  if (T.getAddressSpace() != 0) {
     // OpenCL allows function arguments declared to be an array of a type
     // to be qualified with an address space.
     if (!(getLangOpts().OpenCL && T->isArrayType())) {
@@ -12862,10 +12853,8 @@ FieldDecl *Sema::HandleField(Scope *S, RecordDecl *Record,
 
   // TR 18037 does not allow fields to be declared with address spaces.
   if (T.getQualifiers().hasAddressSpace()) {
-    if (T.getAddressSpace() != Context.getDefaultAS()) {
-      Diag(Loc, diag::err_field_with_address_space);
-      D.setInvalidType();
-    }
+    Diag(Loc, diag::err_field_with_address_space);
+    D.setInvalidType();
   }
 
   // OpenCL 1.2 spec, s6.9 r:

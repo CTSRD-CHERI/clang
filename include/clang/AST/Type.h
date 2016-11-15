@@ -734,9 +734,6 @@ public:
   /// (C++0x [basic.types]p9)
   bool isCXX11PODType(ASTContext &Context) const;
 
-  /// \brief Determine whether this type is a capability.
-  bool isCapabilityType(ASTContext &Context) const;
-
   /// Return true if this is a trivial type per (C++0x [basic.types]p9)
   bool isTrivialType(ASTContext &Context) const;
 
@@ -1630,6 +1627,7 @@ public:
   bool isFunctionNoProtoType() const { return getAs<FunctionNoProtoType>(); }
   bool isFunctionProtoType() const { return getAs<FunctionProtoType>(); }
   bool isPointerType() const;
+  bool isMemoryCapabilityType(const ASTContext &Context) const;
   bool isAnyPointerType() const;   // Any C pointer or ObjC object pointer
   bool isBlockPointerType() const;
   bool isVoidPointerType() const;
@@ -2145,19 +2143,22 @@ public:
 ///
 class PointerType : public Type, public llvm::FoldingSetNode {
   QualType PointeeType;
+  bool IsMemoryCapability : 1;
 
-  PointerType(QualType Pointee, QualType CanonicalPtr) :
+  PointerType(QualType Pointee, QualType CanonicalPtr, bool IsMemCap = false) :
     Type(Pointer, CanonicalPtr, Pointee->isDependentType(),
          Pointee->isInstantiationDependentType(),
          Pointee->isVariablyModifiedType(),
          Pointee->containsUnexpandedParameterPack()),
-    PointeeType(Pointee) {
+    PointeeType(Pointee), IsMemoryCapability(IsMemCap) {
   }
   friend class ASTContext;  // ASTContext creates these.
 
 public:
 
   QualType getPointeeType() const { return PointeeType; }
+
+  bool isMemoryCapability() const { return IsMemoryCapability; }
 
   /// Returns true if address spaces of pointers overlap.
   /// OpenCL v2.0 defines conversion rules for pointers to different
@@ -2179,10 +2180,11 @@ public:
   QualType desugar() const { return QualType(this, 0); }
 
   void Profile(llvm::FoldingSetNodeID &ID) {
-    Profile(ID, getPointeeType());
+    Profile(ID, getPointeeType(), isMemoryCapability());
   }
-  static void Profile(llvm::FoldingSetNodeID &ID, QualType Pointee) {
+  static void Profile(llvm::FoldingSetNodeID &ID, QualType Pointee, bool IsMemCap) {
     ID.AddPointer(Pointee.getAsOpaquePtr());
+    ID.AddBoolean(IsMemCap);
   }
 
   static bool classof(const Type *T) { return T->getTypeClass() == Pointer; }

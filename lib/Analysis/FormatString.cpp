@@ -338,9 +338,9 @@ ArgType::matchesType(ASTContext &C, QualType argTy) const {
       const PointerType *PT = argTy->getAs<PointerType>();
       if (!PT)
         return NoMatch;
-      QualType pointeeTy = PT->getPointeeType();
-      if (pointeeTy.getAddressSpace() != C.getDefaultAS())
+      if (C.getTargetInfo().areAllPointersCapabilities() != PT->isMemoryCapability())
         return NoMatch;
+      QualType pointeeTy = PT->getPointeeType();
       if (const BuiltinType *BT = pointeeTy->getAs<BuiltinType>())
         switch (BT->getKind()) {
           case BuiltinType::Void:
@@ -385,8 +385,7 @@ ArgType::matchesType(ASTContext &C, QualType argTy) const {
 
     case CPointerTy:
       if (const PointerType *PT = argTy->getAs<PointerType>()) {
-        QualType pointeeTy = PT->getPointeeType();
-        if (pointeeTy.getAddressSpace() != C.getDefaultAS())
+        if (C.getTargetInfo().areAllPointersCapabilities() != PT->isMemoryCapability())
           return NoMatch;
       }
       if (argTy->isVoidPointerType()) {
