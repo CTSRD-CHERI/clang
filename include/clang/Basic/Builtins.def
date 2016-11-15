@@ -56,11 +56,13 @@
 //  I   -> Required to constant fold to an integer constant expression.
 //
 // Types may be postfixed with the following modifiers:
-// * -> pointer (optionally followed by an address space number, if no address
-//               space is specified than any address space will be accepted)
+// * -> pointer (optionally followed by an address space number, or 'm' for 
+//      memory capabilities. If no address space is specified than
+//      any address space will be accepted)
 // & -> reference (optionally followed by an address space number)
 // C -> const
 // D -> volatile
+// m -> memory capability
 
 // The third value provided to the macro specifies information about attributes
 // of the function.  These must be kept in sync with the predicates in the
