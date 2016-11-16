@@ -747,6 +747,8 @@ void AggExprEmitter::VisitCastExpr(CastExpr *E) {
   case CK_BuiltinFnToFnPtr:
   case CK_ZeroToOCLEvent:
   case CK_AddressSpaceConversion:
+  case CK_MemoryCapabilityToPointer:
+  case CK_PointerToMemoryCapability:
     llvm_unreachable("cast kind invalid for aggregate types");
   }
 }

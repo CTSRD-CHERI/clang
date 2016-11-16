@@ -298,7 +298,13 @@ enum CastKind {
   CK_ZeroToOCLEvent,
 
   // Convert a pointer to a different address space.
-  CK_AddressSpaceConversion
+  CK_AddressSpaceConversion,
+
+  // Convert a memory capability to a pointer.
+  CK_MemoryCapabilityToPointer,
+
+  // Convert a pointer to a memory capability.
+  CK_PointerToMemoryCapability
 };
 
 static const CastKind CK_Invalid = static_cast<CastKind>(-1);

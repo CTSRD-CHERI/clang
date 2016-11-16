@@ -483,6 +483,8 @@ ComplexPairTy ComplexExprEmitter::EmitCast(CastKind CK, Expr *Op,
   case CK_BuiltinFnToFnPtr:
   case CK_ZeroToOCLEvent:
   case CK_AddressSpaceConversion:
+  case CK_MemoryCapabilityToPointer:
+  case CK_PointerToMemoryCapability:
     llvm_unreachable("invalid cast kind for complex value");
 
   case CK_FloatingRealToComplex:

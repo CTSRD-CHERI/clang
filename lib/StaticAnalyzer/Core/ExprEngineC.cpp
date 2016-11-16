@@ -293,6 +293,8 @@ void ExprEngine::VisitCast(const CastExpr *CastE, const Expr *Ex,
       case CK_Dependent:
       case CK_ArrayToPointerDecay:
       case CK_BitCast:
+      case CK_MemoryCapabilityToPointer:
+      case CK_PointerToMemoryCapability:
       case CK_AddressSpaceConversion:
       case CK_IntegralCast:
       case CK_NullToPointer:
