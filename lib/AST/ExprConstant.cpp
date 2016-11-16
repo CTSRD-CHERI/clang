@@ -5449,6 +5449,8 @@ bool PointerExprEvaluator::VisitCastExpr(const CastExpr* E) {
   case CK_CPointerToObjCPointerCast:
   case CK_BlockPointerToObjCPointerCast:
   case CK_AnyPointerToBlockPointerCast:
+  case CK_MemoryCapabilityToPointer:
+  case CK_PointerToMemoryCapability:
   case CK_AddressSpaceConversion:
     if (!Visit(SubExpr))
       return false;
@@ -8684,6 +8686,8 @@ bool IntExprEvaluator::VisitCastExpr(const CastExpr *E) {
   case CK_ZeroToOCLQueue:
   case CK_NonAtomicToAtomic:
   case CK_AddressSpaceConversion:
+  case CK_MemoryCapabilityToPointer:
+  case CK_PointerToMemoryCapability:
   case CK_IntToOCLSampler:
     llvm_unreachable("invalid cast kind for integral value");
 
@@ -9182,6 +9186,8 @@ bool ComplexExprEvaluator::VisitCastExpr(const CastExpr *E) {
   case CK_ZeroToOCLQueue:
   case CK_NonAtomicToAtomic:
   case CK_AddressSpaceConversion:
+  case CK_MemoryCapabilityToPointer:
+  case CK_PointerToMemoryCapability:
   case CK_IntToOCLSampler:
     llvm_unreachable("invalid cast kind for complex value");
 
