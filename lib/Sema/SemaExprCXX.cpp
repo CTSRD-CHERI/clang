@@ -2111,7 +2111,8 @@ void Sema::DeclareGlobalNewDelete() {
 
   GlobalNewDeleteDeclared = true;
 
-  QualType VoidPtr = Context.getPointerType(Context.VoidTy);
+  QualType VoidPtr = Context.getPointerType(Context.VoidTy,
+                         Context.getTargetInfo().areAllPointersCapabilities());
   QualType SizeT = Context.getSizeType();
   bool AssumeSaneOperatorNew = getLangOpts().AssumeSaneOperatorNew;
 
