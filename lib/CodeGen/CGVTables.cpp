@@ -587,7 +587,7 @@ llvm::Constant *CodeGenVTables::CreateVTableInitializer(
             llvm::FunctionType::get(CGM.VoidTy, /*isVarArg=*/false);
           StringRef PureCallName = CGM.getCXXABI().GetPureVirtualCallName();
           PureVirtualFn = CGM.CreateRuntimeFunction(Ty, PureCallName);
-          PureVirtualFn = llvm::ConstantExpr::getBitCast(PureVirtualFn,
+          PureVirtualFn = llvm::ConstantExpr::getPointerBitCastOrAddrSpaceCast(PureVirtualFn,
                                                          CGM.Int8PtrTy);
         }
         Init = PureVirtualFn;
