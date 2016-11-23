@@ -618,7 +618,7 @@ llvm::Constant *CodeGenVTables::CreateVTableInitializer(
           Init = CGM.GetAddrOfFunction(GD, Ty, /*ForVTable=*/true);
         }
 
-        Init = llvm::ConstantExpr::getBitCast(Init, Int8PtrTy);
+        Init = llvm::ConstantExpr::getPointerBitCastOrAddrSpaceCast(Init, Int8PtrTy);
       }
       break;
     }
