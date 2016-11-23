@@ -2095,7 +2095,8 @@ static void emitGlobalDtorWithCXAAtExit(CodeGenFunction &CGF,
   // reasonably call with the default CC.  Go ahead and cast it to the
   // right prototype.
   llvm::Type *dtorTy =
-    llvm::FunctionType::get(CGF.VoidTy, CGF.Int8PtrTy, false)->getPointerTo();
+    llvm::FunctionType::get(CGF.VoidTy, CGF.Int8PtrTy, false)->getPointerTo(
+                                CGF.CGM.getTargetCodeGenInfo().getDefaultAS());
 
   // extern "C" int __cxa_atexit(void (*f)(void *), void *p, void *d);
   llvm::Type *paramTys[] = { dtorTy, CGF.Int8PtrTy, CGF.Int8PtrTy };
@@ -2109,12 +2110,13 @@ static void emitGlobalDtorWithCXAAtExit(CodeGenFunction &CGF,
 
   // Create a variable that binds the atexit to this shared object.
   llvm::Constant *handle =
-    CGF.CGM.CreateRuntimeVariable(CGF.Int8Ty, "__dso_handle");
+    CGF.CGM.CreateRuntimeVariable(CGF.Int8Ty, "__dso_handle", 
+                            CGF.CGM.getTargetCodeGenInfo().getDefaultAS());
 
   llvm::Value *args[] = {
-    llvm::ConstantExpr::getBitCast(dtor, dtorTy),
+    llvm::ConstantExpr::getPointerBitCastOrAddrSpaceCast(dtor, dtorTy),
     llvm::ConstantExpr::getBitCast(addr, CGF.Int8PtrTy),
-    handle
+    handle // FIXME-cheri-c++: should this be a capability in the pure ABI?
   };
   CGF.EmitNounwindRuntimeCall(atexit, args);
 }
