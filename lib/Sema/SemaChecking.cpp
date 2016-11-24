@@ -1777,7 +1777,7 @@ ExprResult Sema::SemaAtomicOpsOverloaded(ExprResult TheCallResult,
           Ty = Context.getPointerDiffType();
         else {
           Ty = Context.getAddrSpaceQualType(ValType.getLocalUnqualifiedType(), PointerAS);
-          Ty = Context.getPointerType(Ty);
+          Ty = Context.getPointerType(Ty, Context.getTargetInfo().areAllPointersCapabilities());
         }
         break;
       case 2:
