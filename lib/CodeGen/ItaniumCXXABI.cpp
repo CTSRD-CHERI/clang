@@ -1360,7 +1360,8 @@ ItaniumCXXABI::buildStructorSignature(const CXXMethodDecl *MD, StructorType T,
   // Check if we need to add a VTT parameter (which has type void **).
   if (T == StructorType::Base && MD->getParent()->getNumVBases() != 0)
     ArgTys.insert(ArgTys.begin() + 1,
-                  Context.getPointerType(Context.VoidPtrTy));
+                  Context.getPointerType(Context.VoidPtrTy,
+                              CGM.getTargetCodeGenInfo().getDefaultAS()));
 }
 
 void ItaniumCXXABI::EmitCXXDestructors(const CXXDestructorDecl *D) {
@@ -1390,7 +1391,8 @@ void ItaniumCXXABI::addImplicitStructorParams(CodeGenFunction &CGF,
     ASTContext &Context = getContext();
 
     // FIXME: avoid the fake decl
-    QualType T = Context.getPointerType(Context.VoidPtrTy);
+    QualType T = Context.getPointerType(Context.VoidPtrTy,
+                              CGM.getTargetCodeGenInfo().getDefaultAS());
     ImplicitParamDecl *VTTDecl
       = ImplicitParamDecl::Create(Context, nullptr, MD->getLocation(),
                                   &Context.Idents.get("vtt"), T);
@@ -1679,7 +1681,9 @@ static llvm::Value *performTypeAdjustment(CodeGenFunction &CGF,
     llvm::Value *OffsetPtr =
         CGF.Builder.CreateConstInBoundsGEP1_64(VTablePtr, VirtualAdjustment);
 
-    OffsetPtr = CGF.Builder.CreateBitCast(OffsetPtr, PtrDiffTy->getPointerTo());
+    OffsetPtr = CGF.Builder.CreateBitCast(OffsetPtr, 
+                      PtrDiffTy->getPointerTo(
+                       CGF.CGM.getTargetCodeGenInfo().getDefaultAS()));
 
     // Load the adjustment offset from the vtable.
     llvm::Value *Offset =
