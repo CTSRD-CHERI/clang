@@ -1546,8 +1546,9 @@ Value *ScalarExprEmitter::VisitCastExpr(CastExpr *CE) {
 
     return Builder.CreateBitCast(Src, DstTy);
   }
-  case CK_AddressSpaceConversion: {
-    // XXXAR: Is this also correct for CHERI?
+  case CK_AddressSpaceConversion:
+  case CK_MemoryCapabilityToPointer:
+  case CK_PointerToMemoryCapability: {
     Expr::EvalResult Result;
     if (E->EvaluateAsRValue(Result, CGF.getContext()) &&
         Result.Val.isNullPointer()) {
@@ -1561,14 +1562,6 @@ Value *ScalarExprEmitter::VisitCastExpr(CastExpr *CE) {
     }
     // Since target may map different address spaces in AST to the same address
     // space, an address space conversion may end up as a bitcast.
-    Value *Src = Visit(const_cast<Expr*>(E));
-    llvm::Type *DestType = ConvertType(DestTy);
-    if (Src->getType() == DestType)
-      return Src;
-    return Builder.CreatePointerBitCastOrAddrSpaceCast(Src, DestType);
-  }
-  case CK_MemoryCapabilityToPointer:
-  case CK_PointerToMemoryCapability: {
     Value *Src = Visit(const_cast<Expr*>(E));
     llvm::Type *DestType = ConvertType(DestTy);
     if (Src->getType() == DestType)
