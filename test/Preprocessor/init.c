@@ -4601,7 +4601,7 @@
 // CHERI256: #define __WCHAR_WIDTH__ 32
 // CHERI256: #define __WINT_TYPE__ int
 // CHERI256: #define __WINT_WIDTH__ 32
-// CHERI256: #define __capability __attribute__((address_space(200)))
+// CHERI256: #define __capability __attribute__((memory_capability))
 // CHERI256: #define __clang__ 1
 // CHERI256: #define __llvm__ 1
 // CHERI256: #define __mips 64
@@ -4926,7 +4926,7 @@
 // CHERI128: #define __WCHAR_WIDTH__ 32
 // CHERI128: #define __WINT_TYPE__ int
 // CHERI128: #define __WINT_WIDTH__ 32
-// CHERI128: #define __capability __attribute__((address_space(200)))
+// CHERI128: #define __capability __attribute__((memory_capability))
 // CHERI128: #define __clang__ 1
 // CHERI128: #define __llvm__ 1
 // CHERI128: #define __mips 64
