@@ -7734,10 +7734,22 @@ public:
         CapSize(-1) {
     TheCXXABI.set(TargetCXXABI::GenericMIPS);
 
-    setABI((getTriple().getArch() == llvm::Triple::mips ||
-            getTriple().getArch() == llvm::Triple::mipsel)
-               ? "o32"
-               : "n64");
+    if (getTriple().getEnvironment() == llvm::Triple::ABI32 ||
+        getTriple().getEnvironment() == llvm::Triple::GNUABI32 ||
+        getTriple().getEnvironment() == llvm::Triple::AndroidABI32)
+      setABI("o32");
+    else if (getTriple().getEnvironment() == llvm::Triple::ABIN32 ||
+        getTriple().getEnvironment() == llvm::Triple::GNUABIN32)
+      setABI("n32");
+    else if (getTriple().getEnvironment() == llvm::Triple::ABI64 ||
+             getTriple().getEnvironment() == llvm::Triple::GNUABI64 ||
+             getTriple().getEnvironment() == llvm::Triple::AndroidABI64)
+      setABI("n64");
+    else
+      setABI((getTriple().getArch() == llvm::Triple::mips ||
+              getTriple().getArch() == llvm::Triple::mipsel)
+                 ? "o32"
+                 : "n64");
 
     CPU = ABI == "o32" ? "mips32r2" : "mips64r2";
     if (IsCHERI) {
@@ -7792,17 +7804,20 @@ public:
     if (Name == "o32") {
       setO32ABITypes();
       ABI = Name;
+      setDataLayout();
       return true;
     }
 
     if (Name == "n32") {
       setN32ABITypes();
       ABI = Name;
+      setDataLayout();
       return true;
     }
     if (Name == "n64") {
       setN64ABITypes();
       ABI = Name;
+      setDataLayout();
       return true;
     }
     if (Name == "purecap") {
