@@ -7696,9 +7696,9 @@ class MipsTargetInfo : public TargetInfo {
       llvm_unreachable("Invalid ABI");
 
     if (BigEndian)
-      resetDataLayout(("E-" + Layout + (CapabilityABI ? "-A200" : "")).str());
+      resetDataLayout(("E-" + Layout + (CapabilityABI ? "-A200-ni:200" : "")).str());
     else
-      resetDataLayout(("e-" + Layout + (CapabilityABI ? "-A200" : "")).str());
+      resetDataLayout(("e-" + Layout + (CapabilityABI ? "-A200-ni:200" : "")).str());
   }
 
 
