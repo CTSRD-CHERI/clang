@@ -32,10 +32,14 @@ void mips::getMipsCPUAndABI(const ArgList &Args, const llvm::Triple &Triple,
                             StringRef &CPUName, StringRef &ABIName) {
   const char *DefMips32CPU = "mips32r2";
   const char *DefMips64CPU = "mips64r2";
+#if CHERI_IS_64
+  const char *CHERICPU = "cheri64";
+#else
 #if CHERI_IS_128
   const char *CHERICPU = "cheri128";
 #else
   const char *CHERICPU = "cheri";
+#endif
 #endif
 
   // MIPS32r6 is the default for mips(el)?-img-linux-gnu and MIPS64r6 is the
@@ -138,9 +142,12 @@ void mips::getMipsCPUAndABI(const ArgList &Args, const llvm::Triple &Triple,
 
   // change CPU from cheri to cheri128 if -mllvm -cheri128 was passed
   if (CPUName == CHERICPU)
-    for (const Arg *A : Args.filtered(options::OPT_mllvm))
+    for (const Arg *A : Args.filtered(options::OPT_mllvm)) {
         if (StringRef(A->getValue(0)) == "-cheri128")
           CPUName = "cheri128";
+        if (StringRef(A->getValue(0)) == "-cheri64")
+          CPUName = "cheri64";
+    }
 
   // FIXME: Warn on inconsistent use of -march and -mabi.
 }

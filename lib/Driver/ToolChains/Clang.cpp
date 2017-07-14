@@ -1485,6 +1485,18 @@ void Clang::AddMIPSTargetArgs(const ArgList &Args,
       CmdArgs.push_back("-cheri128");
     }
   }
+  if (CPUName == "cheri64" && getToolChain().getArch() == llvm::Triple::cheri) {
+    // Add -mllvm -cheri64 if -mcpu=cheri64 is passed and ensure that it is
+    // only passed once because otherwise the compilation will fail
+    bool HaveCHERI64Flag = false;
+    for (const Arg *A : Args.filtered(options::OPT_mllvm))
+      if (StringRef(A->getValue(0)) == "-cheri64")
+        HaveCHERI64Flag = true;
+    if (!HaveCHERI64Flag) {
+      CmdArgs.push_back("-mllvm");
+      CmdArgs.push_back("-cheri64");
+    }
+  }
 }
 
 void Clang::AddPPCTargetArgs(const ArgList &Args,
