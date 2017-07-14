@@ -39,6 +39,10 @@
 using namespace clang;
 
 static llvm::cl::opt<bool>
+CHERI64("cheri64", llvm::cl::desc("CHERI capabilities are 64 bits"),
+    llvm::cl::NotHidden, llvm::cl::init(false));
+
+static llvm::cl::opt<bool>
 CHERI128("cheri128", llvm::cl::desc("CHERI capabilities are 128 bits"),
     llvm::cl::NotHidden, llvm::cl::init(false));
 
@@ -7683,7 +7687,10 @@ class MipsTargetInfo : public TargetInfo {
     if (ABI == "o32")
       Layout = "m:m-p:32:32-i8:8:32-i16:16:32-i64:64-n32-S64";
     else if (ABI == "n32")
-      Layout = "m:e-p:32:32-i8:8:32-i16:16:32-i64:64-n32:64-S128";
+      if (CHERI64)
+        Layout = "m:e-pf200:64:64-p:32:32-i8:8:32-i16:16:32-i64:64-n32:64-S128";
+      else
+        Layout = "m:e-p:32:32-i8:8:32-i16:16:32-i64:64-n32:64-S128";
     else if (ABI == "n64") {
       if (IsCHERI) {
         if (CHERI128)
@@ -7753,15 +7760,17 @@ public:
 
     CPU = ABI == "o32" ? "mips32r2" : "mips64r2";
     if (IsCHERI) {
-      if (Opts.CPU == "cheri128") {
+      if (Opts.CPU == "cheri64") {
+        CHERI64 = true;
+      } else if (Opts.CPU == "cheri128") {
         CHERI128 = true;
       }
 #if CHERI_IS_128
       if (ForceCHERI256)
         CHERI128 = false;
 #endif
-      CPU = CHERI128 ? "cheri128" : "cheri";
-      CapSize = CHERI128 ? 128 : 256;
+      CPU = CHERI64? "cheri64" : (CHERI128 ? "cheri128" : "cheri");
+      CapSize = CHERI64? 64: (CHERI128 ? 128 : 256);
       SuitableAlign = CapSize;
     }
 
@@ -7786,6 +7795,7 @@ public:
     return llvm::StringSwitch<bool>(CPU)
         .Case("cheri", true)
         .Case("cheri128", true)
+        .Case("cheri64", true)
         .Case("mips3", true)
         .Case("mips4", true)
         .Case("mips5", true)
@@ -7885,6 +7895,7 @@ public:
   bool setCPU(const std::string &Name) override {
     CPU = Name;
     return llvm::StringSwitch<bool>(Name)
+        .Case("cheri64", true)
         .Case("cheri128", true)
         .Case("cheri", true)
         .Case("mips1", true)
@@ -8048,7 +8059,9 @@ public:
       Builder.defineMacro("__CHERI_CAP_PERMISSION_ACCESS_KR2C__", Twine(1<<14));
 
       Builder.defineMacro("_MIPS_SZCAP", Twine(getCHERICapabilityWidth()));
-      if (CHERI128)
+      if (CHERI64)
+          Builder.defineMacro("_MIPS_CAP_ALIGN_MASK", "0xfffffffffffffff8");
+      else if (CHERI128)
           Builder.defineMacro("_MIPS_CAP_ALIGN_MASK", "0xfffffffffffffff0");
       else
           Builder.defineMacro("_MIPS_CAP_ALIGN_MASK", "0xffffffffffffffe0");
@@ -8241,7 +8254,7 @@ public:
         HasFP64 = false;
       else if (Feature == "+nan2008")
         IsNan2008 = true;
-      else if (Feature == "+cheri" || Feature == "+cheri128")
+      else if (Feature == "+cheri" || Feature == "+cheri128" || Feature == "+cheri64")
         IsCHERI = true;
       else if (Feature == "-nan2008")
         IsNan2008 = false;
@@ -8298,8 +8311,8 @@ public:
            getTriple().getArch() == llvm::Triple::mips64el;
   }
 
-  unsigned getIntCapWidth() const override { return CHERI128 ? 128 : 256; }
-  unsigned getIntCapAlign() const override { return CHERI128 ? 128 : 256; }
+  unsigned getIntCapWidth() const override { return CHERI64? 64 : (CHERI128 ? 128 : 256); }
+  unsigned getIntCapAlign() const override { return CHERI64? 64 : (CHERI128 ? 128 : 256); }
 
   uint64_t getCHERICapabilityWidth() const override { return CapSize; }
 
