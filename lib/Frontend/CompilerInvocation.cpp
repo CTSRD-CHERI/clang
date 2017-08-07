@@ -2527,6 +2527,17 @@ static void ParseTargetArgs(TargetOptions &Opts, ArgList &Args,
   // Use the default target triple if unspecified.
   if (Opts.Triple.empty())
     Opts.Triple = llvm::sys::getDefaultTargetTriple();
+
+  // Modify the Triple and ABI according to the Triple and ABI.
+  llvm::Triple ABITriple;
+  StringRef ABIName;
+  std::tie(ABITriple, ABIName) =
+      llvm::Triple(Opts.Triple).getABIVariant(Opts.ABI);
+  if (ABITriple.getArch() == llvm::Triple::UnknownArch)
+    Diags.Report(diag::err_target_unknown_abi) << Opts.ABI;
+  Opts.Triple = ABITriple.str();
+  Opts.ABI = ABIName;
+
   Opts.OpenCLExtensionsAsWritten = Args.getAllArgValues(OPT_cl_ext_EQ);
 
   llvm::Triple T(Opts.Triple);

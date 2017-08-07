@@ -69,6 +69,10 @@ struct AssemblerInvocation {
   /// The name of the target triple to assemble for.
   std::string Triple;
 
+  /// The name of the ABI to assembler for or the empty string for the default
+  /// ABI.
+  std::string ABI;
+
   /// If given, the name of the target CPU to determine which instructions
   /// are legal.
   std::string CPU;
@@ -139,6 +143,7 @@ struct AssemblerInvocation {
 public:
   AssemblerInvocation() {
     Triple = "";
+    ABI = "";
     NoInitialTextSection = 0;
     InputFile = "-";
     OutputPath = "-";
@@ -190,12 +195,23 @@ bool AssemblerInvocation::CreateFromArgs(AssemblerInvocation &Opts,
 
   // Target Options
   Opts.Triple = llvm::Triple::normalize(Args.getLastArgValue(OPT_triple));
+  Opts.ABI = Args.getLastArgValue(OPT_target_abi);
   Opts.CPU = Args.getLastArgValue(OPT_target_cpu);
   Opts.Features = Args.getAllArgValues(OPT_target_feature);
 
   // Use the default target triple if unspecified.
   if (Opts.Triple.empty())
     Opts.Triple = llvm::sys::getDefaultTargetTriple();
+
+  // Modify the Triple and ABI according to the Triple and ABI.
+  llvm::Triple ABITriple;
+  StringRef ABIName;
+  std::tie(ABITriple, ABIName) =
+      llvm::Triple(Opts.Triple).getABIVariant(Opts.ABI);
+  if (ABITriple.getArch() == llvm::Triple::UnknownArch)
+    Diags.Report(diag::err_target_unknown_abi) << Opts.ABI;
+  Opts.Triple = ABITriple.str();
+  Opts.ABI = ABIName;
 
   // Language Options
   Opts.IncludePaths = Args.getAllArgValues(OPT_I);
