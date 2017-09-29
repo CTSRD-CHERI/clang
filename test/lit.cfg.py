@@ -9,39 +9,19 @@ import tempfile
 import lit.formats
 import lit.util
 
+from lit.llvm import llvm_config
+from lit.llvm import ToolFilter
+
 # Configuration file for the 'lit' test runner.
 
 # name: The name of this test suite.
 config.name = 'Clang'
 
-# Tweak PATH for Win32
-if platform.system() == 'Windows':
-    # Seek sane tools in directories and set to $PATH.
-    path = getattr(config, 'lit_tools_dir', None)
-    path = lit_config.getToolsPath(path,
-                                   config.environment['PATH'],
-                                   ['cmp.exe', 'grep.exe', 'sed.exe'])
-    if path is not None:
-        path = os.path.pathsep.join((path,
-                                     config.environment['PATH']))
-        config.environment['PATH'] = path
-
-# Choose between lit's internal shell pipeline runner and a real shell.  If
-# LIT_USE_INTERNAL_SHELL is in the environment, we use that as an override.
-use_lit_shell = os.environ.get("LIT_USE_INTERNAL_SHELL")
-if use_lit_shell:
-    # 0 is external, "" is default, and everything else is internal.
-    execute_external = (use_lit_shell == "0")
-else:
-    # Otherwise we default to internal on Windows and external elsewhere, as
-    # bash on Windows is usually very slow.
-    execute_external = (not sys.platform in ['win32'])
-
 # testFormat: The test format to use to interpret tests.
 #
 # For now we require '&&' between commands, until they get globally killed and
 # the test runner updated.
-config.test_format = lit.formats.ShTest(execute_external)
+config.test_format = lit.formats.ShTest(not llvm_config.use_lit_shell)
 
 # suffixes: A list of file extensions to treat as test files.
 config.suffixes = ['.c', '.cpp', '.cppm', '.m', '.mm', '.cu', '.ll', '.cl', '.s', '.S', '.modulemap', '.test', '.rs']
@@ -81,22 +61,16 @@ possibly_dangerous_env_vars = ['COMPILER_PATH', 'RC_DEBUG_OPTIONS',
 # Clang/Win32 may refer to %INCLUDE%. vsvarsall.bat sets it.
 if platform.system() != 'Windows':
     possibly_dangerous_env_vars.append('INCLUDE')
-for name in possibly_dangerous_env_vars:
-  if name in config.environment:
-    del config.environment[name]
+
+llvm_config.clear_environment(possibly_dangerous_env_vars)
 
 # Tweak the PATH to include the tools dir and the scripts dir.
-path = os.path.pathsep.join((
-        config.clang_tools_dir, config.llvm_tools_dir, config.environment['PATH']))
-config.environment['PATH'] = path
-path = os.path.pathsep.join((config.llvm_shlib_dir, config.llvm_libs_dir,
-                              config.environment.get('LD_LIBRARY_PATH','')))
-config.environment['LD_LIBRARY_PATH'] = path
+llvm_config.with_environment('PATH', [config.llvm_tools_dir, config.clang_tools_dir], append_path=True)
+
+llvm_config.with_environment('LD_LIBRARY_PATH', [config.llvm_shlib_dir, config.llvm_libs_dir], append_path=True)
 
 # Propagate path to symbolizer for ASan/MSan.
-for symbolizer in ['ASAN_SYMBOLIZER_PATH', 'MSAN_SYMBOLIZER_PATH']:
-    if symbolizer in os.environ:
-        config.environment[symbolizer] = os.environ[symbolizer]
+llvm_config.with_system_environment(['ASAN_SYMBOLIZER_PATH', 'MSAN_SYMBOLIZER_PATH'])
 
 # Discover the 'clang' and 'clangcc' to use.
 
@@ -139,52 +113,9 @@ config.substitutions.append( ('%PATH%', config.environment['PATH']) )
 if config.clang_examples:
     config.available_features.add('examples')
 
-# Note that when substituting %clang_cc1 also fill in the include directory of
-# the builtin headers. Those are part of even a freestanding environment, but
-# Clang relies on the driver to locate them.
-def getClangBuiltinIncludeDir(clang):
-    # FIXME: Rather than just getting the version, we should have clang print
-    # out its resource dir here in an easy to scrape form.
-    cmd = subprocess.Popen([clang, '-print-file-name=include'],
-                           stdout=subprocess.PIPE,
-                           env=config.environment)
-    if not cmd.stdout:
-      lit_config.fatal("Couldn't find the include dir for Clang ('%s')" % clang)
-    dir = cmd.stdout.read().strip()
-    if sys.platform in ['win32'] and execute_external:
-        # Don't pass dosish path separator to msys bash.exe.
-        dir = dir.replace('\\', '/')
-    # Ensure the result is an ascii string, across Python2.5+ - Python3.
-    return str(dir.decode('ascii'))
-
-def makeItaniumABITriple(triple):
-    m = re.match(r'(\w+)-(\w+)-(\w+)', triple)
-    if not m:
-      lit_config.fatal("Could not turn '%s' into Itanium ABI triple" % triple)
-    if m.group(3).lower() != 'win32':
-      # All non-win32 triples use the Itanium ABI.
-      return triple
-    return m.group(1) + '-' + m.group(2) + '-mingw32'
-
-def makeMSABITriple(triple):
-    m = re.match(r'(\w+)-(\w+)-(\w+)', triple)
-    if not m:
-      lit_config.fatal("Could not turn '%s' into MS ABI triple" % triple)
-    isa = m.group(1).lower()
-    vendor = m.group(2).lower()
-    os = m.group(3).lower()
-    if os == 'win32':
-      # If the OS is win32, we're done.
-      return triple
-    if isa.startswith('x86') or isa == 'amd64' or re.match(r'i\d86', isa):
-      # For x86 ISAs, adjust the OS.
-      return isa + '-' + vendor + '-win32'
-    # -win32 is not supported for non-x86 targets; use a default.
-    return 'i686-pc-win32'
-
-
+builtin_include_dir = llvm_config.get_clang_builtin_include_dir(config.clang)
 clang_cc1_cmd = '%s -cc1 -internal-isystem %s -nostdsysteminc' % (
-                config.clang, getClangBuiltinIncludeDir(config.clang))
+                config.clang, builtin_include_dir)
 
 cheri128_cc1_substitution = clang_cc1_cmd + ' -triple cheri-unknown-freebsd -mllvm -cheri128 -target-cpu cheri128'
 cheri256_cc1_substitution = clang_cc1_cmd + ' -triple cheri-unknown-freebsd -target-cpu cheri'
@@ -203,6 +134,7 @@ else:
 config.substitutions.append( ('%cheri128_cc1', cheri128_cc1_substitution) )
 config.substitutions.append( ('%cheri256_cc1', cheri256_cc1_substitution) )
 
+
 config.substitutions.append( ('%clang_analyze_cc1',
                               '%clang_cc1 -analyze %analyze') )
 config.substitutions.append( ('%clang_cc1', clang_cc1_cmd) )
@@ -212,17 +144,26 @@ config.substitutions.append( ('%clang_cl', ' ' + config.clang +
                               ' --driver-mode=cl '))
 config.substitutions.append( ('%clangxx', ' ' + config.clang +
                               ' --driver-mode=g++ '))
+
+clang_func_map = lit.util.which('clang-func-mapping', config.environment['PATH'])
+if clang_func_map:
+    config.substitutions.append( ('%clang_func_map', ' ' + clang_func_map + ' ') )
+
 config.substitutions.append( ('%clang', ' ' + config.clang + ' ') )
-config.substitutions.append( ('%test_debuginfo', ' ' + config.llvm_src_root + '/utils/test_debuginfo.pl ') )
-config.substitutions.append( ('%itanium_abi_triple', makeItaniumABITriple(config.target_triple)) )
-config.substitutions.append( ('%ms_abi_triple', makeMSABITriple(config.target_triple)) )
-config.substitutions.append( ('%resource_dir', getClangBuiltinIncludeDir(config.clang)) )
+config.substitutions.append( ('%test_debuginfo',
+                             ' ' + config.llvm_src_root +  '/utils/test_debuginfo.pl ') )
+config.substitutions.append( ('%itanium_abi_triple',
+                             llvm_config.make_itanium_abi_triple(config.target_triple)) )
+config.substitutions.append( ('%ms_abi_triple',
+                             llvm_config.make_msabi_triple(config.target_triple)) )
+config.substitutions.append( ('%resource_dir', builtin_include_dir) )
 config.substitutions.append( ('%python', config.python_executable) )
 
 # The host triple might not be set, at least if we're compiling clang from
 # an already installed llvm.
 if config.host_triple and config.host_triple != '@LLVM_HOST_TRIPLE@':
-    config.substitutions.append( ('%target_itanium_abi_host_triple', '--target=%s' % makeItaniumABITriple(config.host_triple)) )
+    config.substitutions.append( ('%target_itanium_abi_host_triple',
+                                 '--target=%s' % llvm_config.make_itanium_abi_triple(config.host_triple)) )
 else:
     config.substitutions.append( ('%target_itanium_abi_host_triple', '') )
 
@@ -252,52 +193,29 @@ config.substitutions.append(
     (' %clang-cl ',
      """*** invalid substitution, use '%clang_cl'. ***""") )
 
-# For each occurrence of a clang tool name as its own word, replace it
-# with the full path to the build directory holding that tool.  This
-# ensures that we are testing the tools just built and not some random
+# For each occurrence of a clang tool name, replace it with the full path to
+# the build directory holding that tool.  We explicitly specify the directories
+# to search to ensure that we get the tools just built and not some random
 # tools that might happen to be in the user's PATH.
-tool_dirs = os.path.pathsep.join((config.clang_tools_dir, config.llvm_tools_dir))
+tool_dirs = [config.clang_tools_dir, config.llvm_tools_dir]
 
-# Regex assertions to reject neighbor hyphens/dots (seen in some tests).
-# For example, don't match 'clang-check-' or '.clang-format'.
-NoPreHyphenDot = r"(?<!(-|\.))"
-NoPostHyphenDot = r"(?!(-|\.))"
-NoPostBar = r"(?!(/|\\))"
-
-tool_patterns = [r"\bFileCheck\b",
-                 r"\bc-index-test\b",
-                 r"\bllvm-objdump\b",
-                 r"\bllvm-readobj\b",
-                 NoPreHyphenDot + r"\bclang-check\b" + NoPostHyphenDot,
-                 NoPreHyphenDot + r"\bclang-diff\b" + NoPostHyphenDot,
-                 NoPreHyphenDot + r"\bclang-format\b" + NoPostHyphenDot,
-                 # FIXME: Some clang test uses opt?
-                 NoPreHyphenDot + r"\bopt\b" + NoPostBar + NoPostHyphenDot,
-                 # Handle these specially as they are strings searched
-                 # for during testing.
-                 r"\| \bcount\b",
-                 r"\| \bnot\b"]
+tool_patterns = [
+    'FileCheck', 'c-index-test',
+    # XXXAR: needed by some CHERI tests
+    'llvm-readobj', 'llvm-objdump',
+    ToolFilter('clang-check', pre='-.', post='-.'),
+    ToolFilter('clang-diff', pre='-.', post='-.'),
+    ToolFilter('clang-format', pre='-.', post='-.'),
+    # FIXME: Some clang test uses opt?
+    ToolFilter('opt', pre='-.', post=r'/\-.'),
+    # Handle these specially as they are strings searched for during testing.
+    ToolFilter(r'\| \bcount\b', verbatim=True),
+    ToolFilter(r'\| \bnot\b', verbatim=True)]
 
 if config.clang_examples:
-    tool_patterns.append(NoPreHyphenDot + r"\bclang-interpreter\b" + NoPostHyphenDot)
+    tool_patterns.append(ToolFilter('clang-interpreter', '-.', '-.'))
 
-for pattern in tool_patterns:
-    # Extract the tool name from the pattern.  This relies on the tool
-    # name being surrounded by \b word match operators.  If the
-    # pattern starts with "| ", include it in the string to be
-    # substituted.
-    tool_match = re.match(r"^(\\)?((\| )?)\W+b([0-9A-Za-z-_]+)\\b\W*$",
-                          pattern)
-    tool_pipe = tool_match.group(2)
-    tool_name = tool_match.group(4)
-    tool_path = lit.util.which(tool_name, tool_dirs)
-    if not tool_path:
-        # Warn, but still provide a substitution.
-        lit_config.note('Did not find ' + tool_name + ' in ' + tool_dirs)
-        tool_path = config.clang_tools_dir + '/' + tool_name
-    config.substitutions.append((pattern, tool_pipe + tool_path))
-
-###
+llvm_config.add_tool_substitutions(tool_patterns, tool_dirs)
 
 # Set available features we allow tests to conditionalize on.
 #
@@ -315,18 +233,6 @@ if config.clang_staticanalyzer:
 if platform.system() not in ['FreeBSD']:
     config.available_features.add('crash-recovery')
 
-# Shell execution
-if execute_external:
-    config.available_features.add('shell')
-
-# For tests that require Darwin to run.
-# This is used by debuginfo-tests/*block*.m and debuginfo-tests/foreach.m.
-if platform.system() in ['Darwin']:
-    config.available_features.add('system-darwin')
-elif platform.system() in ['Windows']:
-    # For tests that require Windows to run.
-    config.available_features.add('system-windows')
-
 # ANSI escape sequences in non-dumb terminal
 if platform.system() not in ['Windows']:
     config.available_features.add('ansi-escape-sequences')
@@ -340,12 +246,6 @@ if platform.system() not in ['Windows']:
 # clang to run with -rtlib=libgcc.
 if platform.system() not in ['Darwin', 'Fuchsia']:
     config.available_features.add('libgcc')
-
-# Native compilation: Check if triples match.
-# FIXME: Consider cases that target can be executed
-# even if host_triple were different from target_triple.
-if config.host_triple == config.target_triple:
-    config.available_features.add("native")
 
 # Case-insensitive file system
 def is_filesystem_case_insensitive():
@@ -387,86 +287,23 @@ if not re.match(r'.*-(cygwin)$', config.target_triple):
 if platform.system() not in ['Windows']:
     config.available_features.add('can-remove-opened-file')
 
-# Returns set of available features, registered-target(s), asserts and
-# compile definitions.
-def get_llvm_config_props():
-    set_of_features = set()
+def calculate_arch_features(arch_string):
+    features = []
+    for arch in arch_string.split():
+        features.append(arch.lower() + '-registered-target')
+    return features
 
-    cmd = subprocess.Popen(
-        [
-            os.path.join(config.llvm_tools_dir, 'llvm-config'),
-            '--assertion-mode',
-            '--targets-built',
-            '--cxxflags'
-            ],
-        stdout=subprocess.PIPE,
-        env=config.environment
-        )
-    # 1st line corresponds to --assertion-mode, "ON" or "OFF".
-    line = cmd.stdout.readline().strip().decode('ascii')
-    if line == "ON":
-        set_of_features.add('asserts')
-
-    # 2nd line corresponds to --targets-built, like;
-    # AArch64 ARM CppBackend X86
-    for arch in cmd.stdout.readline().decode('ascii').split():
-        set_of_features.add(arch.lower() + '-registered-target')
-
-    # 3rd line contains compile definitions, search it to define if
-    # libstdc++ safe mode is set.
-    if re.search(r'-D_GLIBCXX_DEBUG\b', cmd.stdout.readline().decode('ascii')):
-        set_of_features.add('libstdcxx-safe-mode')
-
-    return set_of_features
-
-config.available_features.update(get_llvm_config_props())
+llvm_config.feature_config(
+  [('--assertion-mode', {'ON' : 'asserts'}),
+   ('--cxxflags', {r'-D_GLIBCXX_DEBUG\b' : 'libstdcxx-safe-mode'}),
+   ('--targets-built', calculate_arch_features)
+  ])
 
 if lit.util.which('xmllint'):
     config.available_features.add('xmllint')
 
-# Sanitizers.
-if 'Address' in config.llvm_use_sanitizer:
-    config.available_features.add("asan")
-else:
-    config.available_features.add("not_asan")
-if 'Memory' in config.llvm_use_sanitizer:
-    config.available_features.add("msan")
-if 'Undefined' in config.llvm_use_sanitizer:
-    config.available_features.add("ubsan")
-else:
-    config.available_features.add("not_ubsan")
-
 if config.enable_backtrace:
     config.available_features.add("backtrace")
-
-if config.have_zlib:
-    config.available_features.add("zlib")
-else:
-    config.available_features.add("nozlib")
-
-# Check if we should run long running tests.
-if lit_config.params.get("run_long_tests", None) == "true":
-    config.available_features.add("long_tests")
-
-# Check if we should use gmalloc.
-use_gmalloc_str = lit_config.params.get('use_gmalloc', None)
-if use_gmalloc_str is not None:
-    if use_gmalloc_str.lower() in ('1', 'true'):
-        use_gmalloc = True
-    elif use_gmalloc_str.lower() in ('', '0', 'false'):
-        use_gmalloc = False
-    else:
-        lit_config.fatal('user parameter use_gmalloc should be 0 or 1')
-else:
-    # Default to not using gmalloc
-    use_gmalloc = False
-
-# Allow use of an explicit path for gmalloc library.
-# Will default to '/usr/lib/libgmalloc.dylib' if not set.
-gmalloc_path_str = lit_config.params.get('gmalloc_path',
-                                         '/usr/lib/libgmalloc.dylib')
-if use_gmalloc:
-     config.environment.update({'DYLD_INSERT_LIBRARIES' : gmalloc_path_str})
 
 # Check if we should allow outputs to console.
 run_console_tests = int(lit_config.params.get('enable_console', '0'))
@@ -477,6 +314,3 @@ lit.util.usePlatformSdkOnDarwin(config, lit_config)
 macOSSDKVersion = lit.util.findPlatformSdkVersionOnMacOS(config, lit_config)
 if macOSSDKVersion is not None:
     config.available_features.add('macos-sdk-' + macOSSDKVersion)
-
-if config.enable_abi_breaking_checks == "1":
-    config.available_features.add('abi-breaking-checks')
