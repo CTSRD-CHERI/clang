@@ -137,7 +137,7 @@ void freebsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   if (ToolChain.getArch() == llvm::Triple::cheri)
     if (Args.hasArg(options::OPT_mabi_EQ)) {
       auto A = Args.getLastArg(options::OPT_mabi_EQ);
-      IsCHERIPureCapABI = StringRef(A->getValue()).lower() == "purecap";
+      IsCHERIPureCapABI = (StringRef(A->getValue()).lower() == "purecap" || StringRef(A->getValue()).lower() == "purecap32");
     }
 
   // Silence warning for "clang -g foo.o -o foo"

@@ -1055,7 +1055,7 @@ Value *ScalarExprEmitter::EmitScalarConversion(Value *Src, QualType SrcType,
     if (DstType->isCHERICapabilityType(CGF.getContext())) {
       Value *Null =
         Builder.CreateIntToPtr(llvm::ConstantInt::get(CGF.IntPtrTy, 0), DstTy);
-      Src = Builder.CreateSExtOrTrunc(Src, CGF.Int64Ty);
+      Src = Builder.CreateSExtOrTrunc(Src, CGF.Int32Ty);
       return CGF.setPointerOffset(Null, Src);
     }
     // First, convert to the correct width so that we control the kind of

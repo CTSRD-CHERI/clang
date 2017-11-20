@@ -2134,7 +2134,7 @@ static LValue EmitGlobalVarDeclLValue(CodeGenFunction &CGF,
 
 llvm::Value *CodeGenFunction::FunctionAddressToCapability(CodeGenFunction &CGF, llvm::Value
     *Addr) {
-  llvm::Value *V = CGF.Builder.CreatePtrToInt(Addr, CGF.Int64Ty);
+  llvm::Value *V = CGF.Builder.CreatePtrToInt(Addr, CGF.Int32Ty);
   llvm::Value *PCC = CGF.Builder.CreateCall(
           CGF.CGM.getIntrinsic(llvm::Intrinsic::cheri_pcc_get), {});
   if (auto *F = dyn_cast<llvm::Function>(Addr->stripPointerCasts()))

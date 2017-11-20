@@ -32,10 +32,14 @@ void mips::getMipsCPUAndABI(const ArgList &Args, const llvm::Triple &Triple,
                             StringRef &CPUName, StringRef &ABIName) {
   const char *DefMips32CPU = "mips32r2";
   const char *DefMips64CPU = "mips64r2";
+#if CHERI_IS_64
+  const char *CHERICPU = "cheri64";
+#else
 #if CHERI_IS_128
   const char *CHERICPU = "cheri128";
 #else
   const char *CHERICPU = "cheri";
+#endif
 #endif
 
   // MIPS32r6 is the default for mips(el)?-img-linux-gnu and MIPS64r6 is the
@@ -89,7 +93,7 @@ void mips::getMipsCPUAndABI(const ArgList &Args, const llvm::Triple &Triple,
       break;
     case llvm::Triple::cheri:
       CPUName = CHERICPU;
-      ABIName = "n64";
+      ABIName = "n32";
       break;
     }
   }
@@ -124,7 +128,7 @@ void mips::getMipsCPUAndABI(const ArgList &Args, const llvm::Triple &Triple,
         Triple.getArch() == llvm::Triple::mipsel)
       ABIName = "o32";
     else
-      ABIName = "n64";
+      ABIName = "n32";
   }
 
   if (CPUName.empty()) {
@@ -132,15 +136,18 @@ void mips::getMipsCPUAndABI(const ArgList &Args, const llvm::Triple &Triple,
     CPUName = llvm::StringSwitch<const char *>(ABIName)
                   .Case("o32", DefMips32CPU)
                   .Cases("n32", "n64", DefMips64CPU)
-                  .Case("purecap", CHERICPU)
+                  .Cases("purecap", "purecap32", CHERICPU)
                   .Default("");
   }
 
   // change CPU from cheri to cheri128 if -mllvm -cheri128 was passed
   if (CPUName == CHERICPU)
-    for (const Arg *A : Args.filtered(options::OPT_mllvm))
+    for (const Arg *A : Args.filtered(options::OPT_mllvm)) {
         if (StringRef(A->getValue(0)) == "-cheri128")
           CPUName = "cheri128";
+        if (StringRef(A->getValue(0)) == "-cheri64")
+          CPUName = "cheri64";
+    }
 
   // FIXME: Warn on inconsistent use of -march and -mabi.
 }
@@ -205,7 +212,7 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
   StringRef ABIName;
   getMipsCPUAndABI(Args, Triple, CPUName, ABIName);
   ABIName = getGnuCompatibleMipsABIName(ABIName);
-  if (ABIName == "purecap" && Triple.getArch() != llvm::Triple::cheri)
+  if ((ABIName == "purecap" || ABIName == "purecap32") && Triple.getArch() != llvm::Triple::cheri)
     D.Diag(diag::err_drv_argument_not_allowed_with) << "-mabi=purecap"
       << Triple.str();
 
