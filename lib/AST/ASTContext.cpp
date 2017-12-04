@@ -8439,13 +8439,14 @@ QualType ASTContext::mergeTypes(QualType LHS, QualType RHS, bool OfBlockPointer,
 
     // special-case merging with void*
     if (MergeVoidPtr) {
-      if (LHS->isVoidPointerType()) return RHS;
-      if (RHS->isVoidPointerType()) return LHS;
+      if (LHS->isVoidPointerType())
+        return RHS;
+      if (RHS->isVoidPointerType())
+        return LHS;
     }
 
-    QualType ResultType = mergeTypes(LHSPointee, RHSPointee, false, 
-                                     Unqualified, IncludeCapabilityQualifier,
-                                     MergeVoidPtr);
+    QualType ResultType = mergeTypes(LHSPointee, RHSPointee, false, Unqualified,
+                                     IncludeCapabilityQualifier, MergeVoidPtr);
     if (ResultType.isNull()) return QualType();
     if (getCanonicalType(LHSPointee) == getCanonicalType(ResultType))
       return LHS;

@@ -1816,7 +1816,7 @@ static void DiagnoseCHERICallback(Sema &Self, SourceLocation Loc,
 }
 
 static void DiagnoseCHERIPtr(Sema &Self, Expr *SrcExpr, QualType DestType,
-                              CastKind &Kind, SourceRange &Range) {
+                             CastKind &Kind, SourceRange &Range) {
   if (Kind != CK_BitCast)
     return;
   
@@ -1839,10 +1839,10 @@ static void DiagnoseCHERIPtr(Sema &Self, Expr *SrcExpr, QualType DestType,
         return;
 
       Self.Diag(Range.getBegin(), diag::err_cheri_ptr_align)
-        << SrcExpr->getType() << DestType
-        << static_cast<unsigned>(SrcAlign.getQuantity())
-        << static_cast<unsigned>(DestAlign.getQuantity())
-        << Range << SrcExpr->getSourceRange();
+          << SrcExpr->getType() << DestType
+          << static_cast<unsigned>(SrcAlign.getQuantity())
+          << static_cast<unsigned>(DestAlign.getQuantity()) << Range
+          << SrcExpr->getSourceRange();
       Self.Diag(Range.getEnd(), diag::note_cheri_ptr_align_fixit);
     }
   }
@@ -2216,17 +2216,19 @@ static TryCastResult TryReinterpretCast(Sema &Self, ExprResult &SrcExpr,
     //   and validity as a conversion of (void*)0 to the integral type.
     bool SrcIsCap = SrcType->isCHERICapabilityType(Self.Context);
     // In purecap ABI casting to uint64_t is fine as we want the pointer range
-    uint64_t Size = SrcIsCap
-        ? Self.Context.getTargetInfo().getPointerRangeForCHERICapability()
-        : Self.Context.getTypeSize(SrcType);
+    uint64_t Size =
+        SrcIsCap
+            ? Self.Context.getTargetInfo().getPointerRangeForCHERICapability()
+            : Self.Context.getTypeSize(SrcType);
     if (Size > Self.Context.getTypeSize(DestType)) {
-      msg = SrcIsCap ? diag::err_bad_cap_reinterpret_cast_small_int :
-                       diag::err_bad_reinterpret_cast_small_int;
+      msg = SrcIsCap ? diag::err_bad_cap_reinterpret_cast_small_int
+                     : diag::err_bad_reinterpret_cast_small_int;
       return TC_Failed;
     }
-    bool DestIsIntCap = DestType->isSpecificBuiltinType(BuiltinType::UIntCap)
-                        || DestType->isSpecificBuiltinType(BuiltinType::IntCap);
-    Kind = SrcIsCap && !DestIsIntCap ? CK_CHERICapabilityToAddress : CK_PointerToIntegral;
+    bool DestIsIntCap = DestType->isSpecificBuiltinType(BuiltinType::UIntCap) ||
+                        DestType->isSpecificBuiltinType(BuiltinType::IntCap);
+    Kind = SrcIsCap && !DestIsIntCap ? CK_CHERICapabilityToAddress
+                                     : CK_PointerToIntegral;
     return TC_Success;
   }
 
@@ -2299,17 +2301,19 @@ static TryCastResult TryReinterpretCast(Sema &Self, ExprResult &SrcExpr,
                               !DestType->isBooleanType();
     bool SrcIsCap = SrcType->isCHERICapabilityType(Self.Context);
     // In purecap ABI casting to uint64_t is fine as we want the pointer range
-    uint64_t Size = SrcIsCap
-        ? Self.Context.getTargetInfo().getPointerRangeForCHERICapability()
-        : Self.Context.getTypeSize(SrcType);
+    uint64_t Size =
+        SrcIsCap
+            ? Self.Context.getTargetInfo().getPointerRangeForCHERICapability()
+            : Self.Context.getTypeSize(SrcType);
     if ((Size > Self.Context.getTypeSize(DestType)) && !MicrosoftException) {
-      msg = SrcIsCap ? diag::err_bad_cap_reinterpret_cast_small_int :
-                       diag::err_bad_reinterpret_cast_small_int;
+      msg = SrcIsCap ? diag::err_bad_cap_reinterpret_cast_small_int
+                     : diag::err_bad_reinterpret_cast_small_int;
       return TC_Failed;
     }
-    bool DestIsIntCap = DestType->isSpecificBuiltinType(BuiltinType::UIntCap)
-                        || DestType->isSpecificBuiltinType(BuiltinType::IntCap);
-    Kind = SrcIsCap && !DestIsIntCap ? CK_CHERICapabilityToAddress : CK_PointerToIntegral;
+    bool DestIsIntCap = DestType->isSpecificBuiltinType(BuiltinType::UIntCap) ||
+                        DestType->isSpecificBuiltinType(BuiltinType::IntCap);
+    Kind = SrcIsCap && !DestIsIntCap ? CK_CHERICapabilityToAddress
+                                     : CK_PointerToIntegral;
     return TC_Success;
   }
 
@@ -2902,7 +2906,8 @@ ExprResult Sema::BuildCXXFunctionalCastExpr(TypeSourceInfo *CastTypeInfo,
 ExprResult Sema::BuildCheriToOrFromCap(SourceLocation LParenLoc,
                                        SourceLocation KeywordLoc, bool IsToCap,
                                        QualType DestTy, TypeSourceInfo *TSInfo,
-                                       SourceLocation RParenLoc, Expr *SubExpr) {
+                                       SourceLocation RParenLoc,
+                                       Expr *SubExpr) {
   // NOTE: __cheri_tocap and __cheri_fromcap are no-ops in both the hybrid and
   //       purecap ABI if both source and destination types are capabilities
   //       and the types are compatible.
@@ -2913,13 +2918,15 @@ ExprResult Sema::BuildCheriToOrFromCap(SourceLocation LParenLoc,
   if (IsToCap) {
     // __cheri_tocap
     if (!SrcTy->isPointerType()) {
-      Diag(SubExpr->getLocStart(), diag::err_cheri_to_from_cap_invalid_source_type)
-        << SrcTy << IsToCap;
+      Diag(SubExpr->getLocStart(),
+           diag::err_cheri_to_from_cap_invalid_source_type)
+          << SrcTy << IsToCap;
       return ExprError();
     }
     if (!DestTy->isCHERICapabilityType(Context)) {
       Diag(TSInfo->getTypeLoc().getLocStart(),
-           diag::err_cheri_to_from_cap_invalid_target_type) << DestTy << IsToCap;
+           diag::err_cheri_to_from_cap_invalid_target_type)
+          << DestTy << IsToCap;
       return ExprError();
     }
     // No-op if SrcTy is a capability
@@ -2929,13 +2936,15 @@ ExprResult Sema::BuildCheriToOrFromCap(SourceLocation LParenLoc,
   } else {
     // __cheri_fromcap
     if (!SrcTy->isCHERICapabilityType(Context)) {
-      Diag(SubExpr->getLocStart(), diag::err_cheri_to_from_cap_invalid_source_type)
-        << SrcTy << IsToCap;
+      Diag(SubExpr->getLocStart(),
+           diag::err_cheri_to_from_cap_invalid_source_type)
+          << SrcTy << IsToCap;
       return ExprError();
     }
     if (!DestTy->isPointerType()) {
       Diag(TSInfo->getTypeLoc().getLocStart(),
-           diag::err_cheri_to_from_cap_invalid_target_type) << DestTy << IsToCap;
+           diag::err_cheri_to_from_cap_invalid_target_type)
+          << DestTy << IsToCap;
       return ExprError();
     }
     // No-op if DestTy is a capability
@@ -2951,22 +2960,25 @@ ExprResult Sema::BuildCheriToOrFromCap(SourceLocation LParenLoc,
   //     return hasSameType(LHS, RHS);
   //  return !mergeTypes(LHS, RHS, false, CompareUnqualified).isNull();
 
-  // XXXAR: I had to modify mergeTypes() to add a IncludeCapabilityQualifier flag
-  // because here we want to compare everything but the __capability qualifier
+  // XXXAR: I had to modify mergeTypes() to add a IncludeCapabilityQualifier
+  // flag because here we want to compare everything but the __capability
+  // qualifier
   // XXXKG: I also extended mergeTypes() with a MergeVoidPtr flag to allow the
   // <-> void* case (and still get the checkng of qualifiers).
-  bool TypesCompatible = !Context.mergeTypes(SrcTy, DestTy, false, false, false, false, true).isNull();
+  bool TypesCompatible =
+      !Context.mergeTypes(SrcTy, DestTy, false, false, false, false, true)
+           .isNull();
   if (!TypesCompatible) {
     Diag(SubExpr->getLocStart(), diag::err_cheri_to_from_cap_unrelated_type)
-      << IsToCap << SrcTy << DestTy;
+        << IsToCap << SrcTy << DestTy;
     return ExprError();
   }
 
   // Warn about no-op cheri casts.
   if (Kind == CK_NoOp) {
     Diag(KeywordLoc, diag::warn_cheri_to_from_cap_noop)
-      << IsToCap << SrcTy << DestTy
-      << FixItHint::CreateRemoval(SourceRange(LParenLoc, RParenLoc));
+        << IsToCap << SrcTy << DestTy
+        << FixItHint::CreateRemoval(SourceRange(LParenLoc, RParenLoc));
   }
 
   return CStyleCastExpr::Create(Context, DestTy, VK_RValue, Kind, SubExpr,
@@ -2975,18 +2987,19 @@ ExprResult Sema::BuildCheriToOrFromCap(SourceLocation LParenLoc,
 
 ExprResult Sema::BuildCheriOffsetOrAddress(SourceLocation LParenLoc,
                                            SourceLocation KeywordLoc,
-                                           bool IsOffsetCast, QualType
-                                           DestTy, TypeSourceInfo *TSInfo,
-                                           SourceLocation RParenLoc, Expr
-                                           *SubExpr) {
+                                           bool IsOffsetCast, QualType DestTy,
+                                           TypeSourceInfo *TSInfo,
+                                           SourceLocation RParenLoc,
+                                           Expr *SubExpr) {
   // Check the source type
   // Use getRealReferenceType() because getType() only returns T for T&
   QualType SrcTy = SubExpr->getRealReferenceType();
   bool SrcIsCap = SrcTy->isCHERICapabilityType(Context);
   if (!SrcIsCap) {
     // XXXKG: What about functions?
-    Diag(SubExpr->getLocStart(), diag::err_cheri_offset_addr_invalid_source_type)
-      << SrcTy << IsOffsetCast;
+    Diag(SubExpr->getLocStart(),
+         diag::err_cheri_offset_addr_invalid_source_type)
+        << SrcTy << IsOffsetCast;
     return ExprError();
   }
 
@@ -2994,45 +3007,46 @@ ExprResult Sema::BuildCheriOffsetOrAddress(SourceLocation LParenLoc,
   // For __cheri_addr, output a more specific error message if DestTy is an
   // integral pointer type
   if (!IsOffsetCast) {
-    bool DestIsPtr = DestTy->isPointerType()
-                        && !DestTy->getAs<PointerType>()->isCHERICapability();
+    bool DestIsPtr = DestTy->isPointerType() &&
+                     !DestTy->getAs<PointerType>()->isCHERICapability();
     if (DestIsPtr) {
-      Diag(SubExpr->getLocStart(), diag::err_cheri_addr_ptr_type)
-        << DestTy;
+      Diag(SubExpr->getLocStart(), diag::err_cheri_addr_ptr_type) << DestTy;
       return ExprError();
     }
   }
   // Otherwise just check that it is a non-enum integer type
   bool DestIsInt = DestTy->isIntegerType() && !DestTy->isEnumeralType();
   if (!DestIsInt) {
-    Diag(SubExpr->getLocStart(), diag::err_cheri_offset_addr_invalid_target_type)
-      << DestTy << IsOffsetCast;
+    Diag(SubExpr->getLocStart(),
+         diag::err_cheri_offset_addr_invalid_target_type)
+        << DestTy << IsOffsetCast;
     return ExprError();
   }
 
-  // Output warning about truncation if DestTy is smaller than CHERI cap pointer range
-  auto& TI = Context.getTargetInfo();
+  // Output warning about truncation if DestTy is smaller than CHERI cap pointer
+  // range
+  auto &TI = Context.getTargetInfo();
   uint64_t PtrRange = TI.getPointerRangeForCHERICapability();
   uint64_t DestRange = Context.getTypeSize(DestTy);
   if (DestRange < PtrRange) {
     bool DestIsSigned = DestTy->isSignedIntegerOrEnumerationType();
-    const char *minTy = TI.getTypeName(
-                          TI.getLeastIntTypeByWidth(PtrRange, DestIsSigned)
-                        );
-    Diag(SubExpr->getLocStart(), diag::warn_cheri_offset_addr_smaller_target_type)
-      << DestTy << minTy << IsOffsetCast;
+    const char *minTy =
+        TI.getTypeName(TI.getLeastIntTypeByWidth(PtrRange, DestIsSigned));
+    Diag(SubExpr->getLocStart(),
+         diag::warn_cheri_offset_addr_smaller_target_type)
+        << DestTy << minTy << IsOffsetCast;
   }
 
   return CStyleCastExpr::Create(Context, DestTy, VK_RValue,
                                 IsOffsetCast ? CK_CHERICapabilityToOffset
                                              : CK_CHERICapabilityToAddress,
-                                SubExpr,
-                                nullptr, TSInfo, LParenLoc, RParenLoc);
+                                SubExpr, nullptr, TSInfo, LParenLoc, RParenLoc);
 }
 
-ExprResult Sema::ActOnCheriCast(Scope *S, SourceLocation LParenLoc, tok::TokenKind Kind,
-                                SourceLocation KeywordLoc, ParsedType Type,
-                                SourceLocation RParenLoc, Expr *SubExpr) {
+ExprResult Sema::ActOnCheriCast(Scope *S, SourceLocation LParenLoc,
+                                tok::TokenKind Kind, SourceLocation KeywordLoc,
+                                ParsedType Type, SourceLocation RParenLoc,
+                                Expr *SubExpr) {
   TypeSourceInfo *TSInfo = nullptr;
   QualType T = GetTypeFromParser(Type, &TSInfo);
   if (!TSInfo)
@@ -3045,14 +3059,14 @@ ExprResult Sema::ActOnCheriCast(Scope *S, SourceLocation LParenLoc, tok::TokenKi
   case tok::kw___cheri_tocap:
   case tok::kw___cheri_fromcap:
     return BuildCheriToOrFromCap(LParenLoc, KeywordLoc,
-                                 Kind == tok::kw___cheri_tocap, T,
-                                 TSInfo, RParenLoc, SubExpr);
+                                 Kind == tok::kw___cheri_tocap, T, TSInfo,
+                                 RParenLoc, SubExpr);
 
   case tok::kw___cheri_offset:
   case tok::kw___cheri_addr:
     return BuildCheriOffsetOrAddress(LParenLoc, KeywordLoc,
-                                     Kind == tok::kw___cheri_offset, T,
-                                     TSInfo, RParenLoc, SubExpr);
+                                     Kind == tok::kw___cheri_offset, T, TSInfo,
+                                     RParenLoc, SubExpr);
 
   default:
     llvm_unreachable("Unknown CHERI cast!");

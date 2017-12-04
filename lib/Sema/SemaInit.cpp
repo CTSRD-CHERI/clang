@@ -7819,10 +7819,12 @@ bool InitializationSequence::Diagnose(Sema &S,
       PrintRefInMessage = !FromType->isReferenceType();
     }
 
-    S.Diag(Kind.getLocation(), DiagID) << FromType << DestType << PrintRefInMessage
-      << FixItHint::CreateInsertion(Kind.getLocation(), "(__cheri_" + 
-                                    std::string(PtrToCap ? "to" : "from") +
-                                    "cap " + DestType.getAsString() + ")");
+    S.Diag(Kind.getLocation(), DiagID)
+        << FromType << DestType << PrintRefInMessage
+        << FixItHint::CreateInsertion(
+               Kind.getLocation(), "(__cheri_" +
+                                       std::string(PtrToCap ? "to" : "from") +
+                                       "cap " + DestType.getAsString() + ")");
     break;
   }
   case FK_ConversionFailed: {

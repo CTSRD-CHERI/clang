@@ -8181,17 +8181,19 @@ public:
                                   SourceLocation RParenLoc,
                                   Expr *SubExpr);
 
-  ExprResult BuildCheriToOrFromCap(SourceLocation LParenLoc, SourceLocation KeywordLoc,
-                                   bool IsToCap, QualType DestTy,
-                                   TypeSourceInfo *TSInfo, SourceLocation
-                                   RParenLoc, Expr *SubExpr);
+  ExprResult BuildCheriToOrFromCap(SourceLocation LParenLoc,
+                                   SourceLocation KeywordLoc, bool IsToCap,
+                                   QualType DestTy, TypeSourceInfo *TSInfo,
+                                   SourceLocation RParenLoc, Expr *SubExpr);
 
-  ExprResult BuildCheriOffsetOrAddress(SourceLocation LParenLoc, SourceLocation KeywordLoc,
+  ExprResult BuildCheriOffsetOrAddress(SourceLocation LParenLoc,
+                                       SourceLocation KeywordLoc,
                                        bool IsOffsetCast, QualType DestTy,
-                                       TypeSourceInfo *TSInfo, SourceLocation
-                                       RParenLoc, Expr *SubExpr);
+                                       TypeSourceInfo *TSInfo,
+                                       SourceLocation RParenLoc, Expr *SubExpr);
 
-  ExprResult ActOnCheriCast(Scope *S, SourceLocation LParenLoc, tok::TokenKind Kind,
+  ExprResult ActOnCheriCast(Scope *S, SourceLocation LParenLoc,
+                            tok::TokenKind Kind,
                             SourceLocation CheriPtrKeywordLoc, ParsedType Type,
                             SourceLocation RParenLoc, Expr *SubExpr);
 

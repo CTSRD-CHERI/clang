@@ -1135,7 +1135,8 @@ static bool HasFeature(const Preprocessor &PP, StringRef Feature) {
       .Case("nullability_on_arrays", true)
       .Case("memory_sanitizer", LangOpts.Sanitize.has(SanitizerKind::Memory))
       .Case("thread_sanitizer", LangOpts.Sanitize.has(SanitizerKind::Thread))
-      .Case("dataflow_sanitizer", LangOpts.Sanitize.has(SanitizerKind::DataFlow))
+      .Case("dataflow_sanitizer",
+            LangOpts.Sanitize.has(SanitizerKind::DataFlow))
       .Case("efficiency_sanitizer",
             LangOpts.Sanitize.hasOneOf(SanitizerKind::Efficiency))
       // Objective-C features

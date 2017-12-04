@@ -527,10 +527,12 @@ ExprResult Sema::ImpCastExprToType(Expr *E, QualType Ty,
         if (IntegerLiteral* Int = dyn_cast<IntegerLiteral>(E->IgnoreParenCasts()))
           NullLit = Int->getValue().isNullValue();
         if (!StrLit && !NullLit) {
-          return ExprError(Diag(E->getExprLoc(), diag::err_typecheck_convert_ptr_to_cap)
-            << ExprTy << TypeTy << false
-            << FixItHint::CreateInsertion(E->getExprLoc(), "(__cheri_tocap " +
-                                          TypeTy.getAsString() + ")"));
+          return ExprError(
+              Diag(E->getExprLoc(), diag::err_typecheck_convert_ptr_to_cap)
+              << ExprTy << TypeTy << false
+              << FixItHint::CreateInsertion(E->getExprLoc(),
+                                            "(__cheri_tocap " +
+                                                TypeTy.getAsString() + ")"));
         }
       }
     }

@@ -1827,9 +1827,8 @@ Value *ScalarExprEmitter::VisitCastExpr(CastExpr *CE) {
     if (!Src)
       Src = Visit(E); // The default case
     llvm::Type *ResultType = ConvertType(DestTy);
-    Src = Kind == CK_CHERICapabilityToOffset
-            ? CGF.getPointerOffset(Src)
-            : CGF.getPointerAddress(Src);
+    Src = Kind == CK_CHERICapabilityToOffset ? CGF.getPointerOffset(Src)
+                                             : CGF.getPointerAddress(Src);
     bool DestSigned = DestTy->isSignedIntegerOrEnumerationType();
     // Insert int cast in case size of result type and capability offset field
     // are not the same. This will be a no-op if the sizes are the same.

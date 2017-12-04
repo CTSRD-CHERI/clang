@@ -4031,10 +4031,12 @@ Sema::PerformImplicitConversion(Expr *From, QualType ToType,
       if (SCS.isInvalidCHERICapabilityConversion()) {
         unsigned DiagID = FromIsCap ? diag::err_typecheck_convert_cap_to_ptr :
                                       diag::err_typecheck_convert_ptr_to_cap;
-        Diag(From->getLocStart(), DiagID) << FromType << ToType << false
-            << FixItHint::CreateInsertion(From->getLocStart(), "(__cheri_" +
-                                          std::string(FromIsCap ? "from" : "to") +
-                                          "cap " + ToType.getAsString() + ")");
+        Diag(From->getLocStart(), DiagID)
+            << FromType << ToType << false
+            << FixItHint::CreateInsertion(
+                   From->getLocStart(),
+                   "(__cheri_" + std::string(FromIsCap ? "from" : "to") +
+                       "cap " + ToType.getAsString() + ")");
         return ExprError();
       }
       CK = FromIsCap ? CK_CHERICapabilityToPointer : CK_PointerToCHERICapability;

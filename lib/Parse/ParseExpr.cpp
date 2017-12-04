@@ -2372,8 +2372,8 @@ Parser::ParseParenExpression(ParenParseOption &ExprType, bool stopIfCastExpr,
       return ExprError();
 
     return Actions.ActOnCheriCast(getCurScope(), OpenLoc, tokenKind,
-                                  CheriKeywordLoc, Ty.get(),
-                                  RParenLoc, SubExpr.get());
+                                  CheriKeywordLoc, Ty.get(), RParenLoc,
+                                  SubExpr.get());
   } else if (ExprType >= CompoundLiteral &&
              isTypeIdInParens(isAmbiguousTypeId)) {
 
