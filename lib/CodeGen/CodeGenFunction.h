@@ -3379,6 +3379,9 @@ public:
   /// Emit IR for __builtin_os_log_format.
   RValue emitBuiltinOSLogFormat(const CallExpr &E);
 
+  // Emit IR for __builtin_is_aligned/__builtin_is_p2aligned
+  RValue EmitBuiltinIsAligned(const CallExpr *E, bool PowerOfTwo);
+
   llvm::Function *generateBuiltinOSLogHelperFunction(
       const analyze_os_log::OSLogBufferLayout &Layout,
       CharUnits BufferAlignment);
@@ -3833,7 +3836,6 @@ private:
   llvm::Value *emitBuiltinObjectSize(const Expr *E, unsigned Type,
                                      llvm::IntegerType *ResType,
                                      llvm::Value *EmittedE);
-
 public:
 #ifndef NDEBUG
   // Determine whether the given argument is an Objective-C method

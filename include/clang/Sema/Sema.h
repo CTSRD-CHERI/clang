@@ -4224,7 +4224,6 @@ public:
                           tok::TokenKind Op, Expr *Input);
 
   QualType CheckAddressOfOperand(ExprResult &Operand, SourceLocation OpLoc);
-
   ExprResult CreateUnaryExprOrTypeTraitExpr(TypeSourceInfo *TInfo,
                                             SourceLocation OpLoc,
                                             UnaryExprOrTypeTrait ExprKind,
