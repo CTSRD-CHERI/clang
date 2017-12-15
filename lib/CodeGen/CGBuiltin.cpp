@@ -2405,6 +2405,38 @@ RValue CodeGenFunction::EmitBuiltinExpr(const FunctionDecl *FD,
   case Builtin::BI__builtin_operator_delete:
     return EmitBuiltinNewDeleteCall(FD->getType()->castAs<FunctionProtoType>(),
                                     E->getArg(0), true);
+  case Builtin::BI__builtin_is_aligned: {
+    bool IsCheri = E->getType()->isCHERICapabilityType(CGM.getContext());
+    // TODO: handle CHERI types
+    assert(!IsCheri);
+    llvm::IntegerType *IntType = IntegerType::get(
+        getLLVMContext(), getContext().getIntRange(E->getType()));
+    auto *Src = Builder.CreateBitOrPointerCast(EmitScalarExpr(E->getArg(0)), IntType);
+    auto *Alignment = Builder.CreateBitCast(EmitScalarExpr(E->getArg(1)),
+                                            IntType, "alignment");
+    auto *Mask = Builder.CreateSub(Alignment,
+                                   llvm::ConstantInt::get(IntType, 1), "mask");
+    auto *R = Builder.CreateAnd(Src, Mask, "set_bits");
+    return RValue::get(Builder.CreateICmpEQ(
+        R, llvm::Constant::getNullValue(IntType), "is_aligned"));
+  }
+  case Builtin::BI__builtin_is_p2aligned: {
+    bool IsCheri =
+        E->getArg(0)->getType()->isCHERICapabilityType(CGM.getContext());
+    // TODO: handle CHERI types
+    assert(!IsCheri);
+    llvm::IntegerType *IntType = IntegerType::get(
+        getLLVMContext(), getContext().getIntRange(E->getType()));
+    auto *Src = Builder.CreateBitOrPointerCast(EmitScalarExpr(E->getArg(0)), IntType);
+    auto *One = llvm::ConstantInt::get(IntType, 1);
+    auto *Pow2 =
+        Builder.CreateBitCast(EmitScalarExpr(E->getArg(1)), IntType, "pow2");
+    auto *Alignment = Builder.CreateShl(One, Pow2, "alignment");
+    auto *Mask = Builder.CreateSub(Alignment, One, "mask");
+    auto *R = Builder.CreateAnd(Src, Mask, "set_bits");
+    return RValue::get(Builder.CreateICmpEQ(
+        R, llvm::Constant::getNullValue(IntType), "is_aligned"));
+  }
   case Builtin::BI__noop:
     // __noop always evaluates to an integer literal zero.
     return RValue::get(ConstantInt::get(IntTy, 0));
